@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: smart-campus-backend
+  config:
+    import: optional:file:.env[.properties]
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/smartcampus_db}
+
+server:
+  port: ${PORT:8080}

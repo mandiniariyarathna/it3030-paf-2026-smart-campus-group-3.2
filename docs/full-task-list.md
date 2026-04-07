@@ -191,54 +191,56 @@
 ## 🗂️ Project Initialization (All Members)
 
 ### Repository & Environment Setup
-- [ ] Create GitHub organisation / repo: `it3030-paf-2026-smart-campus-groupXX`
-- [ ] Add all team members as collaborators
-- [ ] Set up branch protection rules (`main` requires PR review)
-- [ ] Define branch naming convention: `feature/<member>/<feature-name>`
-- [ ] Create initial project structure:
-  - [ ] `/backend` – Spring Boot project (Maven)
-  - [ ] `/frontend` – React project (Vite)
-- [ ] Bootstrap Spring Boot project via [start.spring.io](https://start.spring.io) with dependencies:
+- [X] Create GitHub organisation / repo: `it3030-paf-2026-smart-campus-groupXX`
+- [X] Add all team members as collaborators
+- [X] Set up branch protection rules (`main` requires PR review)
+- [X] Define branch naming convention: `feature/<member>/<feature-name>`
+- [X] Create initial project structure:
+  - [X] `/backend` – Spring Boot project (Maven)
+  - [X] `/frontend` – React project (Vite)
+- [X] Bootstrap Spring Boot project via [start.spring.io](https://start.spring.io) with dependencies:
   - Spring Web, **Spring Data MongoDB**, Spring Security, Spring OAuth2 Client, Validation, Lombok
   - ⚠️ Do NOT add Spring Data JPA or any SQL driver
-- [ ] Bootstrap React project: `npm create vite@latest frontend -- --template react`
-- [ ] Install frontend dependencies: `axios`, `react-router-dom`, `tailwindcss` / `MUI`
-- [ ] Configure `.gitignore` (exclude `node_modules/`, `target/`, `.env`)
-- [ ] Create root-level `README.md` with setup instructions
-- [ ] Decide MongoDB runtime option (no Docker):
+- [X] Bootstrap React project: `npm create vite@latest frontend -- --template react`
+- [X] Install frontend dependencies: `axios`, `react-router-dom`, `tailwindcss` / `MUI`
+- [X] Configure `.gitignore` (exclude `node_modules/`, `target/`, `.env`)
+- [X] Create root-level `README.md` with setup instructions
+- [X] Decide MongoDB runtime option:
   - [ ] Option A: Local MongoDB Community Server
-  - [ ] Option B: MongoDB Atlas free cluster
-- [ ] Create `.env.example` files for both backend and frontend
-- [ ] Set up GitHub Actions CI workflow (`.github/workflows/ci.yml`)
+  - [X] Option B: MongoDB Atlas free cluster
+- [X] Create `.env.example` files for both backend and frontend
+- [ ] Set up GitHub Actions CI workflow (`.github/workflows/ci.yml`) - Not required for this project
   - [ ] Backend: `mvn clean test` (uses embedded MongoDB for tests)
   - [ ] Frontend: `npm run build`
 
-### MongoDB Setup (No Docker)
+### MongoDB Setup
 - [ ] If using local MongoDB: install MongoDB Community Server and start the service
-- [ ] If using Atlas: create free cluster, DB user, and IP allowlist
-- [ ] Create database: `smartcampus_db`
-- [ ] Configure `backend/src/main/resources/application.yml`:
+- [X] If using Atlas: create free cluster, DB user, and IP allowlist
+- [X] Create database: `smartcampus_db`
+- [X] Configure `backend/src/main/resources/application.yml`:
   ```yaml
   spring:
     data:
       mongodb:
         uri: ${MONGODB_URI:mongodb://localhost:27017/smartcampus_db}
   ```
-- [ ] Add `backend/src/main/resources/application-test.yml`:
+- [X] Add `backend/src/main/resources/application-test.yml`:
   ```yaml
   spring:
     data:
       mongodb:
         uri: mongodb://localhost:27017/smartcampus_test
   ```
-- [ ] Add backend environment variable to `.env.example`:
-  - [ ] `MONGODB_URI=mongodb://localhost:27017/smartcampus_db`
-- [ ] Add `@EnableMongoAuditing` to main application class
-- [ ] Add Flapdoodle embedded MongoDB for tests:
+- [X] Add backend environment variable to `.env.example`:
+  - [X] `MONGODB_URI=mongodb://localhost:27017/smartcampus_db`
+- [X] Add `@EnableMongoAuditing` to main application class
+- [X] Add backend startup MongoDB connection check with terminal success log
+- [X] Add Flapdoodle embedded MongoDB for tests:
   ```xml
   <dependency>
     <groupId>de.flapdoodle.embed</groupId>
-    <artifactId>de.flapdoodle.embed.mongo.spring30x</artifactId>
+    <artifactId>de.flapdoodle.embed.mongo</artifactId>
+    <version>4.11.1</version>
     <scope>test</scope>
   </dependency>
   ```
@@ -624,7 +626,7 @@
 
 ### Testing & Quality
 - [ ] Each member writes min. 5 unit tests for their service layer
-- [ ] Use `@DataMongoTest` with Flapdoodle Embedded MongoDB for repository tests (no Docker needed in CI)
+- [ ] Use `@DataMongoTest` with Flapdoodle Embedded MongoDB for repository tests
 - [ ] Each member creates Postman collection for their endpoints
 - [ ] Combine Postman collections into one exported file for submission
 - [ ] Run full test suite before each PR merge
