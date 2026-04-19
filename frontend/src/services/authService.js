@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 const SIGNUP_ENDPOINT = '/api/auth/signup';
 const GOOGLE_AUTH_ENDPOINT = '/api/auth/google';
@@ -58,7 +58,10 @@ export async function authenticateWithGoogle(idToken) {
   }
 
   if (!response.ok) {
-    const message = responseData?.message || 'Google sign-in failed. Please try again.';
+    const message =
+      responseData?.message ||
+      responseData?.error ||
+      'Google sign-in failed. Please try again.';
     throw new Error(message);
   }
 
