@@ -7,23 +7,49 @@ function ResourceDetailPage() {
   const { id } = useParams();
   const [resource, setResource] = useState(null);
   const [availability, setAvailability] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const loadResource = async () => {
-      const [resourceData, availabilityData] = await Promise.all([
-        getResourceById(id),
-        getResourceAvailability(id),
-      ]);
+      setIsLoading(true);
+      setError('');
 
-      setResource(resourceData);
-      setAvailability(availabilityData);
+      try {
+        const [resourceData, availabilityData] = await Promise.all([
+          getResourceById(id),
+          getResourceAvailability(id),
+        ]);
+
+        setResource(resourceData);
+        setAvailability(availabilityData);
+      } catch (loadError) {
+        setError(loadError.message || 'Failed to load resource details.');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadResource();
   }, [id]);
 
-  if (!resource) {
+  if (isLoading) {
     return <main className="resource-page">Loading resource...</main>;
+  }
+
+  if (error) {
+    return (
+      <main className="resource-page">
+        <p className="field-error">{error}</p>
+        <Link to="/resources" className="resource-link">
+          Back to Resources
+        </Link>
+      </main>
+    );
+  }
+
+  if (!resource) {
+    return <main className="resource-page">Resource not found.</main>;
   }
 
   return (

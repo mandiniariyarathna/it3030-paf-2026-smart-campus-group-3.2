@@ -18,6 +18,8 @@ function ResourcesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const isAdmin = (localStorage.getItem('userRole') || 'ADMIN').toUpperCase() === 'ADMIN';
 
@@ -31,8 +33,17 @@ function ResourcesPage() {
 
   useEffect(() => {
     const loadResources = async () => {
-      const data = await getResources(queryFilters);
-      setResources(data);
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const data = await getResources(queryFilters);
+        setResources(data);
+      } catch (loadError) {
+        setError(loadError.message || 'Failed to load resources.');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadResources();
@@ -73,6 +84,8 @@ function ResourcesPage() {
     setIsSubmitting(true);
 
     try {
+      setError('');
+
       if (editingResource) {
         await updateResource(editingResource.id, payload);
       } else {
@@ -81,6 +94,8 @@ function ResourcesPage() {
 
       await refreshResources();
       closeForm();
+    } catch (submitError) {
+      setError(submitError.message || 'Failed to save resource.');
     } finally {
       setIsSubmitting(false);
     }
@@ -102,6 +117,11 @@ function ResourcesPage() {
         <ResourceFilter filters={filters} onChange={handleFilterChange} onReset={resetFilters} />
 
         <section className="resource-grid" aria-label="resources">
+          {isLoading ? <p className="resource-feedback">Loading resources...</p> : null}
+          {!isLoading && error ? <p className="resource-feedback field-error">{error}</p> : null}
+          {!isLoading && !error && resources.length === 0 ? (
+            <p className="resource-feedback">No resources match the current filters.</p>
+          ) : null}
           {resources.map((resource) => (
             <ResourceCard key={resource.id} resource={resource} isAdmin={isAdmin} onEdit={openEditForm} />
           ))}

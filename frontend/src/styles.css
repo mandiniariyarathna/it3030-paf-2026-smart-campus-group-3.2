@@ -537,6 +537,15 @@ body {
   gap: 0.5rem;
 }
 
+.resource-feedback {
+  margin: 0;
+  grid-column: 1 / -1;
+  border-radius: 12px;
+  background: #e8eff4;
+  color: #2f4b65;
+  padding: 0.8rem;
+}
+
 .resource-link {
   border: none;
   background: none;
