@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { authenticateWithGoogle } from './services/authService';
+import ResourcesPage from './pages/ResourcesPage';
 
 const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
@@ -596,9 +597,9 @@ function HomePage() {
             <button type="button" className="home-btn home-btn-primary">
               Open Dashboard
             </button>
-            <button type="button" className="home-btn home-btn-outline">
-              View Announcements
-            </button>
+            <Link to="/resources" className="home-btn home-btn-outline link-btn">
+              Browse Resources
+            </Link>
           </div>
         </div>
 
@@ -651,6 +652,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/home" element={<HomePage />} />
+      <Route path="/resources" element={<ResourcesPage />} />
     </Routes>
   );
 }
