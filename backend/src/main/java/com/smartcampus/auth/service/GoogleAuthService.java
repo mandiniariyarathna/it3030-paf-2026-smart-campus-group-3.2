@@ -2,6 +2,8 @@ package com.smartcampus.auth.service;
 
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -38,7 +40,7 @@ public class GoogleAuthService {
             throw new IllegalArgumentException("Invalid token issuer");
         }
 
-        if (!"true".equalsIgnoreCase(tokenInfo.emailVerified())) {
+        if (!Boolean.TRUE.equals(tokenInfo.emailVerified())) {
             throw new IllegalArgumentException("Google email is not verified");
         }
 
@@ -68,11 +70,12 @@ public class GoogleAuthService {
         }
     }
 
-    private record GoogleTokenInfo(
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        private record GoogleTokenInfo(
             String aud,
             String iss,
             String email,
-            String emailVerified,
+            @JsonProperty("email_verified") Boolean emailVerified,
             String name,
             String picture) {
     }
