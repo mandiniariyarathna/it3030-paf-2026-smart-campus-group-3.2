@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import AdminRoute from './components/AdminRoute';
+import NotificationBell from './components/NotificationBell';
 import PrivateRoute from './components/PrivateRoute';
 import { useAuth } from './context/AuthContext';
+import UserManagementPage from './pages/UserManagementPage';
 
 const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
@@ -132,6 +134,9 @@ function HomePage() {
     <main className="home-page">
       <section className="home-hero" aria-label="home intro">
         <div className="home-hero-copy">
+          <div className="home-hero-topbar">
+            <NotificationBell />
+          </div>
           <p className="home-kicker">Smart Campus Workspace</p>
           <h1>Welcome, {user?.name || 'User'}</h1>
           <p>Manage your profile, notifications, and role-based pages from a single place.</p>
@@ -168,18 +173,6 @@ function HomePage() {
   );
 }
 
-function AdminPlaceholderPage() {
-  return (
-    <main className="home-page">
-      <section className="home-hero-copy">
-        <p className="home-kicker">Admin Area</p>
-        <h1>User management is enabled</h1>
-        <p>You can now access admin protected routes. Full user management UI comes in the next step.</p>
-      </section>
-    </main>
-  );
-}
-
 function App() {
   return (
     <Routes>
@@ -192,7 +185,7 @@ function App() {
       </Route>
 
       <Route element={<AdminRoute />}>
-        <Route path="/admin/users" element={<AdminPlaceholderPage />} />
+        <Route path="/admin/users" element={<UserManagementPage />} />
       </Route>
     </Routes>
   );
