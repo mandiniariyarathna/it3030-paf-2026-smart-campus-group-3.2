@@ -25,11 +25,16 @@ import com.smartcampus.resource.model.ResourceStatus;
 import com.smartcampus.resource.model.ResourceType;
 import com.smartcampus.resource.service.ResourceService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/resources")
 @Validated
+@Tag(name = "Resources", description = "Facilities and assets catalogue management APIs")
 public class ResourceController {
 
     private final ResourceService resourceService;
@@ -39,10 +44,16 @@ public class ResourceController {
     }
 
     @GetMapping
+        @Operation(summary = "List resources", description = "Retrieve all resources with optional filtering")
+        @ApiResponse(responseCode = "200", description = "Resources fetched successfully")
     public ResponseEntity<Map<String, Object>> getAllResources(
+            @Parameter(description = "Filter by resource type")
             @RequestParam(required = false) ResourceType type,
+            @Parameter(description = "Minimum required capacity")
             @RequestParam(required = false) Integer capacity,
+            @Parameter(description = "Filter by location substring")
             @RequestParam(required = false) String location,
+            @Parameter(description = "Filter by resource status")
             @RequestParam(required = false) ResourceStatus status) {
 
         List<ResourceDTO> resources = resourceService.getAllResources(type, capacity, location, status);
@@ -55,6 +66,8 @@ public class ResourceController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get resource by id", description = "Retrieve a specific resource by its identifier")
+    @ApiResponse(responseCode = "200", description = "Resource fetched successfully")
     public ResponseEntity<ResourceResponseDTO> getResourceById(@PathVariable String id) {
         ResourceResponseDTO response = ResourceResponseDTO.builder()
                 .success(true)
@@ -66,6 +79,8 @@ public class ResourceController {
     }
 
     @PostMapping
+    @Operation(summary = "Create resource", description = "Create a new resource entry (ADMIN only)")
+    @ApiResponse(responseCode = "200", description = "Resource created successfully")
     public ResponseEntity<ResourceResponseDTO> createResource(
             @Valid @RequestBody ResourceRequestDTO request,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
@@ -82,6 +97,8 @@ public class ResourceController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Update resource", description = "Update an existing resource (ADMIN only)")
+    @ApiResponse(responseCode = "200", description = "Resource updated successfully")
     public ResponseEntity<ResourceResponseDTO> updateResource(
             @PathVariable String id,
             @Valid @RequestBody ResourceRequestDTO request,
@@ -99,6 +116,8 @@ public class ResourceController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Soft delete resource", description = "Set resource status to OUT_OF_SERVICE (ADMIN only)")
+    @ApiResponse(responseCode = "200", description = "Resource set to OUT_OF_SERVICE")
     public ResponseEntity<ResourceResponseDTO> softDeleteResource(
             @PathVariable String id,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
@@ -115,6 +134,8 @@ public class ResourceController {
     }
 
     @GetMapping("/{id}/availability")
+    @Operation(summary = "Get availability windows", description = "Retrieve availability windows for a resource")
+    @ApiResponse(responseCode = "200", description = "Availability windows fetched successfully")
     public ResponseEntity<Map<String, Object>> getResourceAvailability(@PathVariable String id) {
         List<AvailabilityWindow> availabilityWindows = resourceService.getAvailabilityWindows(id);
 
