@@ -11,6 +11,10 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.smartcampus.auth.dto.GoogleAuthResponse;
+import com.smartcampus.auth.model.Role;
+import com.smartcampus.auth.model.User;
+import com.smartcampus.auth.repository.UserRepository;
+import com.smartcampus.auth.security.JwtService;
 
 @Service
 public class GoogleAuthService {
@@ -19,10 +23,17 @@ public class GoogleAuthService {
 
     private final RestTemplate restTemplate;
     private final String googleClientId;
+    private final UserRepository userRepository;
+    private final JwtService jwtService;
 
-    public GoogleAuthService(@Value("${google.auth.client-id}") String googleClientId) {
+    public GoogleAuthService(
+            @Value("${google.auth.client-id}") String googleClientId,
+            UserRepository userRepository,
+            JwtService jwtService) {
         this.restTemplate = new RestTemplate();
         this.googleClientId = googleClientId;
+        this.userRepository = userRepository;
+        this.jwtService = jwtService;
     }
 
     public GoogleAuthResponse authenticateWithGoogle(String idToken) {
@@ -52,11 +63,46 @@ public class GoogleAuthService {
                 ? tokenInfo.name()
                 : tokenInfo.email().split("@")[0];
 
+        User user = upsertUser(tokenInfo, displayName);
+        String accessToken = jwtService.generateToken(user.getId(), user.getEmail(), user.getRole());
+
         return new GoogleAuthResponse(
                 "Google authentication successful",
                 displayName,
                 tokenInfo.email(),
-                tokenInfo.picture());
+                tokenInfo.picture(),
+                user.getId(),
+                user.getRole().name(),
+                accessToken);
+    }
+
+    private User upsertUser(GoogleTokenInfo tokenInfo, String displayName) {
+        String providerId = tokenInfo.sub();
+
+        if (providerId == null || providerId.isBlank()) {
+            throw new IllegalArgumentException("Google account ID is missing");
+        }
+
+        return userRepository.findByProviderId(providerId)
+                .map(existingUser -> {
+                    existingUser.setEmail(tokenInfo.email());
+                    existingUser.setName(displayName);
+                    existingUser.setPicture(tokenInfo.picture());
+                    if (existingUser.getRole() == null) {
+                        existingUser.setRole(Role.USER);
+                    }
+                    return userRepository.save(existingUser);
+                })
+                .orElseGet(() -> {
+                    User user = new User();
+                    user.setEmail(tokenInfo.email());
+                    user.setName(displayName);
+                    user.setPicture(tokenInfo.picture());
+                    user.setProvider("google");
+                    user.setProviderId(providerId);
+                    user.setRole(Role.USER);
+                    return userRepository.save(user);
+                });
     }
 
     private GoogleTokenInfo fetchTokenInfo(String idToken) {
@@ -74,6 +120,7 @@ public class GoogleAuthService {
         private record GoogleTokenInfo(
             String aud,
             String iss,
+            String sub,
             String email,
             @JsonProperty("email_verified") Boolean emailVerified,
             String name,
