@@ -103,7 +103,46 @@ function LoginPage() {
     email: '',
     password: '',
   });
+  const [loginErrors, setLoginErrors] = useState({});
+  const [loginTouched, setLoginTouched] = useState({});
   const [submitError, setSubmitError] = useState('');
+
+  const validateLoginField = (fieldName, fieldValue) => {
+    const trimmedValue = fieldValue.trim();
+
+    switch (fieldName) {
+      case 'email': {
+        if (!trimmedValue) {
+          return 'Username is required.';
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedValue)) {
+          return 'Enter a valid university email address.';
+        }
+        return '';
+      }
+      case 'password': {
+        if (!fieldValue) {
+          return 'Password is required.';
+        }
+        return '';
+      }
+      default:
+        return '';
+    }
+  };
+
+  const validateLoginForm = (values) => {
+    const nextErrors = {};
+
+    Object.keys(values).forEach((fieldName) => {
+      const error = validateLoginField(fieldName, values[fieldName]);
+      if (error) {
+        nextErrors[fieldName] = error;
+      }
+    });
+
+    return nextErrors;
+  };
 
   const handleLoginChange = (event) => {
     const { name, value } = event.target;
@@ -111,10 +150,49 @@ function LoginPage() {
       ...previous,
       [name]: value,
     }));
+
+    if (loginTouched[name]) {
+      setLoginErrors((previous) => ({
+        ...previous,
+        [name]: validateLoginField(name, value),
+      }));
+    }
+
+    if (submitError) {
+      setSubmitError('');
+    }
+  };
+
+  const handleLoginBlur = (event) => {
+    const { name, value } = event.target;
+
+    setLoginTouched((previous) => ({
+      ...previous,
+      [name]: true,
+    }));
+
+    setLoginErrors((previous) => ({
+      ...previous,
+      [name]: validateLoginField(name, value),
+    }));
   };
 
   const handleLoginSubmit = (event) => {
     event.preventDefault();
+
+    const nextErrors = validateLoginForm(loginData);
+    setLoginErrors(nextErrors);
+    setLoginTouched({
+      email: true,
+      password: true,
+    });
+
+    if (Object.keys(nextErrors).length > 0) {
+      setSubmitError('Please enter your username and password before signing in.');
+      return;
+    }
+
+    setSubmitError('');
 
     const identity = loginData.email.trim();
     const displayName = identity.includes('@') ? identity.split('@')[0] : identity;
@@ -161,8 +239,16 @@ function LoginPage() {
         autoComplete="email"
         value={loginData.email}
         onChange={handleLoginChange}
+        onBlur={handleLoginBlur}
+        aria-invalid={Boolean(loginTouched.email && loginErrors.email)}
+        aria-describedby="login-email-error"
         required
       />
+      {loginTouched.email && loginErrors.email ? (
+        <p className="field-error" id="login-email-error">
+          {loginErrors.email}
+        </p>
+      ) : null}
 
       <label htmlFor="login-password">Password</label>
       <input
@@ -173,8 +259,16 @@ function LoginPage() {
         autoComplete="current-password"
         value={loginData.password}
         onChange={handleLoginChange}
+        onBlur={handleLoginBlur}
+        aria-invalid={Boolean(loginTouched.password && loginErrors.password)}
+        aria-describedby="login-password-error"
         required
       />
+      {loginTouched.password && loginErrors.password ? (
+        <p className="field-error" id="login-password-error">
+          {loginErrors.password}
+        </p>
+      ) : null}
 
       <GoogleSignInButton onCredential={handleGoogleAuth} onError={setSubmitError} />
       {submitError ? <p className="field-error">{submitError}</p> : null}
