@@ -547,6 +547,17 @@ body {
   padding: 0;
 }
 
+.ghost-btn {
+  border: 1px solid #bfd0de;
+  border-radius: 10px;
+  background: #edf4f8;
+  color: #103f62;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.4rem 0.7rem;
+}
+
 .filter-reset {
   margin-top: 0.55rem;
   border: none;
@@ -578,6 +589,25 @@ body {
   border-radius: 12px;
   background: #e8eff4;
   padding: 0.65rem 0.8rem;
+}
+
+.resource-form-panel {
+  margin-top: 1.2rem;
+  border-radius: 18px;
+  background: rgba(247, 249, 251, 0.95);
+  padding: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.resource-form {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.resource-form-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.6rem;
 }
 
 @media (max-width: 960px) {
