@@ -558,6 +558,28 @@ body {
   cursor: pointer;
 }
 
+.resource-detail-card {
+  margin-top: 1rem;
+  border-radius: 18px;
+  background: rgba(247, 249, 251, 0.9);
+  padding: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.availability-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.availability-list li {
+  border-radius: 12px;
+  background: #e8eff4;
+  padding: 0.65rem 0.8rem;
+}
+
 @media (max-width: 960px) {
   .auth-card {
     grid-template-columns: 1fr;
