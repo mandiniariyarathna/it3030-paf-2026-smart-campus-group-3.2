@@ -1,4 +1,7 @@
 spring:
+  mongodb:
+    embedded:
+      version: 7.0.12
   data:
     mongodb:
-      uri: mongodb://localhost:27017/smartcampus_test
+      database: smartcampus_test
