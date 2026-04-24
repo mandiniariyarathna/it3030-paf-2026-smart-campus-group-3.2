@@ -2,6 +2,7 @@ function ResourceFilter({ filters, onChange, onReset }) {
   return (
     <aside className="resource-filter">
       <h2>Filter Resources</h2>
+      <p className="resource-filter-copy">Use one or more filters to quickly find the right space or equipment.</p>
 
       <label htmlFor="filter-type">Type</label>
       <select id="filter-type" value={filters.type} onChange={(event) => onChange('type', event.target.value)}>
@@ -44,7 +45,7 @@ function ResourceFilter({ filters, onChange, onReset }) {
       />
 
       <button type="button" className="filter-reset" onClick={onReset}>
-        Reset Filters
+        Clear Filters
       </button>
     </aside>
   );

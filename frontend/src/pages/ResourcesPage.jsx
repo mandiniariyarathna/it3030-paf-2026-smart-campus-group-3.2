@@ -31,6 +31,18 @@ function ResourcesPage() {
     [filters]
   );
 
+  const resourceStats = useMemo(() => {
+    const total = resources.length;
+    const active = resources.filter((resource) => resource.status === 'ACTIVE').length;
+    const maintenance = resources.filter((resource) => resource.status === 'UNDER_MAINTENANCE').length;
+
+    return [
+      { label: 'Total resources', value: total },
+      { label: 'Active now', value: active },
+      { label: 'Under maintenance', value: maintenance },
+    ];
+  }, [resources]);
+
   useEffect(() => {
     const loadResources = async () => {
       setIsLoading(true);
@@ -104,14 +116,29 @@ function ResourcesPage() {
   return (
     <main className="resource-page">
       <header className="resource-page-head">
-        <p className="home-kicker">Facilities & Assets Catalogue</p>
-        <h1>Campus Resources</h1>
+        <div>
+          <p className="home-kicker">Facilities & Assets Catalogue</p>
+          <h1>Campus Resources</h1>
+          <p className="resource-page-copy">
+            Browse halls, labs, meeting rooms, and equipment in one place. Use filters to narrow the list before
+            booking or updating a resource.
+          </p>
+        </div>
         {isAdmin ? (
           <button type="button" className="primary-btn" onClick={openCreateForm}>
             Add Resource
           </button>
         ) : null}
       </header>
+
+      <section className="resource-overview" aria-label="resource summary">
+        {resourceStats.map((stat) => (
+          <article key={stat.label} className="resource-stat-card">
+            <p>{stat.label}</p>
+            <strong>{stat.value}</strong>
+          </article>
+        ))}
+      </section>
 
       <section className="resource-layout">
         <ResourceFilter filters={filters} onChange={handleFilterChange} onReset={resetFilters} />

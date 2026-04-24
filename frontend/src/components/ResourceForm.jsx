@@ -53,70 +53,95 @@ function ResourceForm({ mode = 'create', initialData, onSubmit, onCancel, isSubm
 
   return (
     <section className="resource-form-panel" aria-label={title}>
-      <h2>{title}</h2>
+      <div className="resource-form-head">
+        <div>
+          <h2>{title}</h2>
+          <p>
+            Fill in the details below so students and staff can quickly understand where the resource is and how it
+            can be used.
+          </p>
+        </div>
+      </div>
 
       <form className="resource-form" onSubmit={handleSubmit}>
-        <label htmlFor="resource-name">Name</label>
-        <input
-          id="resource-name"
-          type="text"
-          value={formData.name}
-          onChange={(event) => handleChange('name', event.target.value)}
-          maxLength={100}
-          required
-        />
+        <div className="resource-form-grid">
+          <div className="resource-field">
+            <label htmlFor="resource-name">Name</label>
+            <input
+              id="resource-name"
+              type="text"
+              value={formData.name}
+              onChange={(event) => handleChange('name', event.target.value)}
+              placeholder="e.g. Lecture Hall A"
+              maxLength={100}
+              required
+            />
+          </div>
 
-        <label htmlFor="resource-type">Type</label>
-        <select
-          id="resource-type"
-          value={formData.type}
-          onChange={(event) => handleChange('type', event.target.value)}
-        >
-          <option value="LECTURE_HALL">Lecture Hall</option>
-          <option value="LAB">Lab</option>
-          <option value="MEETING_ROOM">Meeting Room</option>
-          <option value="EQUIPMENT">Equipment</option>
-        </select>
+          <div className="resource-field">
+            <label htmlFor="resource-type">Type</label>
+            <select
+              id="resource-type"
+              value={formData.type}
+              onChange={(event) => handleChange('type', event.target.value)}
+            >
+              <option value="LECTURE_HALL">Lecture Hall</option>
+              <option value="LAB">Lab</option>
+              <option value="MEETING_ROOM">Meeting Room</option>
+              <option value="EQUIPMENT">Equipment</option>
+            </select>
+          </div>
 
-        <label htmlFor="resource-capacity">Capacity</label>
-        <input
-          id="resource-capacity"
-          type="number"
-          min="1"
-          value={formData.capacity}
-          onChange={(event) => handleChange('capacity', event.target.value)}
-          required
-        />
+          <div className="resource-field">
+            <label htmlFor="resource-capacity">Capacity</label>
+            <input
+              id="resource-capacity"
+              type="number"
+              min="1"
+              value={formData.capacity}
+              onChange={(event) => handleChange('capacity', event.target.value)}
+              required
+            />
+          </div>
 
-        <label htmlFor="resource-location">Location</label>
-        <input
-          id="resource-location"
-          type="text"
-          maxLength={200}
-          value={formData.location}
-          onChange={(event) => handleChange('location', event.target.value)}
-          required
-        />
+          <div className="resource-field">
+            <label htmlFor="resource-location">Location</label>
+            <input
+              id="resource-location"
+              type="text"
+              maxLength={200}
+              value={formData.location}
+              onChange={(event) => handleChange('location', event.target.value)}
+              placeholder="e.g. Block A, Floor 2"
+              required
+            />
+          </div>
 
-        <label htmlFor="resource-status">Status</label>
-        <select
-          id="resource-status"
-          value={formData.status}
-          onChange={(event) => handleChange('status', event.target.value)}
-        >
-          <option value="ACTIVE">Active</option>
-          <option value="UNDER_MAINTENANCE">Under Maintenance</option>
-          <option value="OUT_OF_SERVICE">Out of Service</option>
-        </select>
+          <div className="resource-field">
+            <label htmlFor="resource-status">Status</label>
+            <select
+              id="resource-status"
+              value={formData.status}
+              onChange={(event) => handleChange('status', event.target.value)}
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="UNDER_MAINTENANCE">Under Maintenance</option>
+              <option value="OUT_OF_SERVICE">Out of Service</option>
+            </select>
+          </div>
 
-        <label htmlFor="resource-description">Description</label>
-        <textarea
-          id="resource-description"
-          maxLength={500}
-          rows={4}
-          value={formData.description}
-          onChange={(event) => handleChange('description', event.target.value)}
-        />
+          <div className="resource-field resource-field-full">
+            <label htmlFor="resource-description">Description</label>
+            <textarea
+              id="resource-description"
+              maxLength={500}
+              rows={4}
+              value={formData.description}
+              onChange={(event) => handleChange('description', event.target.value)}
+              placeholder="Add a short note about facilities, equipment, or access restrictions."
+            />
+          </div>
+        </div>
 
         {error ? <p className="field-error">{error}</p> : null}
 

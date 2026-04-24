@@ -20,15 +20,22 @@ function ResourceCard({ resource, isAdmin, onEdit }) {
   return (
     <article className="resource-card">
       <div className="resource-card-head">
-        <span className="resource-icon" aria-hidden="true">
-          {icon}
-        </span>
+        <div className="resource-card-type">
+          <span className="resource-icon" aria-hidden="true">
+            {icon}
+          </span>
+          <span>{resource.type.replaceAll('_', ' ')}</span>
+        </div>
         <span className={`resource-status ${statusClass}`}>{resource.status}</span>
       </div>
 
       <h3>{resource.name}</h3>
       <p className="resource-meta">{resource.location}</p>
-      <p className="resource-meta">Capacity: {resource.capacity}</p>
+
+      <div className="resource-card-facts">
+        <span>Capacity</span>
+        <strong>{resource.capacity}</strong>
+      </div>
 
       <div className="resource-actions">
         <Link to={`/resources/${resource.id}`} className="resource-link">
