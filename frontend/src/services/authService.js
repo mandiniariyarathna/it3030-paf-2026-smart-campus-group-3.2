@@ -1,69 +1,24 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-
-const SIGNUP_ENDPOINT = '/api/auth/signup';
-const GOOGLE_AUTH_ENDPOINT = '/api/auth/google';
-
-export async function signupUser(signupPayload) {
-  let response;
-
-  try {
-    response = await fetch(`${API_BASE_URL}${SIGNUP_ENDPOINT}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(signupPayload),
-    });
-  } catch {
-    throw new Error('Cannot reach the server. Make sure backend is running and try again.');
-  }
-
-  let responseData = null;
-
-  try {
-    responseData = await response.json();
-  } catch {
-    responseData = null;
-  }
-
-  if (!response.ok) {
-    const message = responseData?.message || 'Signup failed. Please try again.';
-    throw new Error(message);
-  }
-
-  return responseData;
-}
+import apiClient from './apiClient';
 
 export async function authenticateWithGoogle(idToken) {
-  let response;
-
   try {
-    response = await fetch(`${API_BASE_URL}${GOOGLE_AUTH_ENDPOINT}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ idToken }),
-    });
-  } catch {
-    throw new Error('Cannot reach the server. Make sure backend is running and try again.');
-  }
-
-  let responseData = null;
-
-  try {
-    responseData = await response.json();
-  } catch {
-    responseData = null;
-  }
-
-  if (!response.ok) {
+    const response = await apiClient.post('/api/auth/google', { idToken });
+    return response.data;
+  } catch (error) {
     const message =
-      responseData?.message ||
-      responseData?.error ||
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
       'Google sign-in failed. Please try again.';
     throw new Error(message);
   }
+}
 
-  return responseData;
+export async function getCurrentUserProfile() {
+  const response = await apiClient.get('/api/v1/auth/me');
+  return response.data;
+}
+
+export async function logoutUser() {
+  const response = await apiClient.post('/api/v1/auth/logout');
+  return response.data;
 }
