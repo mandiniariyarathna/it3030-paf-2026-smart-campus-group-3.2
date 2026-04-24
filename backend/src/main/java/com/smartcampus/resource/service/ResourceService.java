@@ -88,10 +88,10 @@ public class ResourceService {
         return toDto(resourceRepository.save(existingResource));
     }
 
-    public ResourceDTO softDeleteResource(String id) {
-        Resource resource = getResourceEntityById(id);
-        resource.setStatus(ResourceStatus.OUT_OF_SERVICE);
-        return toDto(resourceRepository.save(resource));
+    public void deleteResource(String id) {
+        // Verify the resource exists before deleting
+        getResourceEntityById(id);
+        resourceRepository.deleteById(id);
     }
 
     public List<AvailabilityWindow> getAvailabilityWindows(String id) {

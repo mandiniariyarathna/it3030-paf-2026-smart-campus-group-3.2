@@ -71,7 +71,7 @@ export async function updateResource(id, payload) {
   return data?.data;
 }
 
-export async function softDeleteResource(id) {
+export async function deleteResource(id) {
   const response = await fetch(`${API_BASE_URL}${RESOURCE_ENDPOINT}/${id}`, {
     method: 'DELETE',
     headers: {
@@ -79,8 +79,16 @@ export async function softDeleteResource(id) {
     },
   });
 
-  const data = await parseResponse(response, 'Unable to remove resource.');
-  return data?.data;
+  if (!response.ok) {
+    let message = 'Unable to delete resource.';
+    try {
+      const data = await response.json();
+      message = data?.message || data?.error || message;
+    } catch {
+      // no body
+    }
+    throw new Error(message);
+  }
 }
 
 export async function getResourceAvailability(id) {

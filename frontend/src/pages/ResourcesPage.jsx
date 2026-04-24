@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import ResourceCard from '../components/ResourceCard';
 import ResourceFilter from '../components/ResourceFilter';
 import ResourceForm from '../components/ResourceForm';
-import { createResource, getResources, updateResource } from '../services/resourceService';
+import { createResource, deleteResource, getResources, updateResource } from '../services/resourceService';
 
 const defaultFilters = {
   type: '',
@@ -113,6 +113,24 @@ function ResourcesPage() {
     }
   };
 
+  const handleDeleteResource = async (resource) => {
+    const confirmed = window.confirm(
+      `Delete ${resource.name}? This will permanently remove the resource.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setError('');
+      await deleteResource(resource.id);
+      await refreshResources();
+    } catch (deleteError) {
+      setError(deleteError.message || 'Failed to delete resource.');
+    }
+  };
+
   return (
     <main className="resource-page">
       <header className="resource-page-head">
@@ -150,7 +168,13 @@ function ResourcesPage() {
             <p className="resource-feedback">No resources match the current filters.</p>
           ) : null}
           {resources.map((resource) => (
-            <ResourceCard key={resource.id} resource={resource} isAdmin={isAdmin} onEdit={openEditForm} />
+            <ResourceCard
+              key={resource.id}
+              resource={resource}
+              isAdmin={isAdmin}
+              onEdit={openEditForm}
+              onDelete={handleDeleteResource}
+            />
           ))}
         </section>
       </section>

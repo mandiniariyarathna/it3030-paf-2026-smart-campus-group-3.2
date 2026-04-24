@@ -13,7 +13,7 @@ const statusClassMap = {
   UNDER_MAINTENANCE: 'status-maintenance',
 };
 
-function ResourceCard({ resource, isAdmin, onEdit }) {
+function ResourceCard({ resource, isAdmin, onEdit, onDelete }) {
   const icon = typeIconMap[resource.type] || '🏫';
   const statusClass = statusClassMap[resource.status] || 'status-neutral';
 
@@ -44,6 +44,11 @@ function ResourceCard({ resource, isAdmin, onEdit }) {
         {isAdmin ? (
           <button type="button" className="resource-link ghost-btn" onClick={() => onEdit(resource)}>
             Edit
+          </button>
+        ) : null}
+        {isAdmin ? (
+          <button type="button" className="resource-link ghost-btn" onClick={() => onDelete(resource)}>
+            Delete
           </button>
         ) : null}
       </div>

@@ -94,16 +94,15 @@ class ResourceServiceTest {
     }
 
     @Test
-    void shouldSoftDeleteResource() {
+    void shouldDeleteResource() {
         Resource existing = Resource.builder().id("res-2").name("Lab").type(ResourceType.LAB).capacity(40)
                 .location("C").status(ResourceStatus.ACTIVE).build();
 
         when(resourceRepository.findById("res-2")).thenReturn(Optional.of(existing));
-        when(resourceRepository.save(any(Resource.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var deleted = resourceService.softDeleteResource("res-2");
+        resourceService.deleteResource("res-2");
 
-        assertEquals(ResourceStatus.OUT_OF_SERVICE, deleted.getStatus());
+        verify(resourceRepository).deleteById("res-2");
     }
 
     @Test

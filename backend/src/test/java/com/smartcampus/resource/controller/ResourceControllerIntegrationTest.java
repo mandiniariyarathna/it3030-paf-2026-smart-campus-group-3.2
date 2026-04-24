@@ -123,7 +123,7 @@ class ResourceControllerIntegrationTest {
     }
 
     @Test
-    void shouldSoftDeleteResource() throws Exception {
+    void shouldDeleteResource() throws Exception {
         Resource resource = Resource.builder()
                 .name("Projector")
                 .type(ResourceType.EQUIPMENT)
@@ -136,8 +136,7 @@ class ResourceControllerIntegrationTest {
 
         mockMvc.perform(delete("/api/v1/resources/{id}", saved.getId())
                         .header("X-User-Role", "ADMIN"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("OUT_OF_SERVICE"));
+                .andExpect(status().isNoContent());
     }
 
     @Test

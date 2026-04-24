@@ -116,21 +116,16 @@ public class ResourceController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Soft delete resource", description = "Set resource status to OUT_OF_SERVICE (ADMIN only)")
-    @ApiResponse(responseCode = "200", description = "Resource set to OUT_OF_SERVICE")
-    public ResponseEntity<ResourceResponseDTO> softDeleteResource(
+    @Operation(summary = "Delete resource", description = "Permanently delete a resource (ADMIN only)")
+    @ApiResponse(responseCode = "204", description = "Resource deleted successfully")
+    public ResponseEntity<Void> deleteResource(
             @PathVariable String id,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
 
         validateAdminRole(userRole);
+        resourceService.deleteResource(id);
 
-        ResourceResponseDTO response = ResourceResponseDTO.builder()
-                .success(true)
-                .data(resourceService.softDeleteResource(id))
-                .message("Resource set to OUT_OF_SERVICE")
-                .build();
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/availability")
