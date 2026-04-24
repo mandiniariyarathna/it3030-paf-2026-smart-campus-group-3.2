@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.bson.types.ObjectId;
 import org.springframework.stereotype.Service;
 
 import com.smartcampus.resource.dto.ResourceDTO;
@@ -16,6 +17,8 @@ import com.smartcampus.resource.repository.ResourceRepository;
 
 @Service
 public class ResourceService {
+
+    private static final ObjectId DEFAULT_CREATED_BY = new ObjectId("660000000000000000000001");
 
     private final ResourceRepository resourceRepository;
 
@@ -62,7 +65,7 @@ public class ResourceService {
                 .availabilityWindows(request.getAvailabilityWindows() == null
                         ? new ArrayList<>()
                         : request.getAvailabilityWindows())
-                .createdBy(request.getCreatedBy())
+            .createdBy(resolveCreatedBy(request.getCreatedBy()))
                 .build();
 
         return toDto(resourceRepository.save(resource));
@@ -76,7 +79,7 @@ public class ResourceService {
         existingResource.setCapacity(request.getCapacity());
         existingResource.setLocation(request.getLocation());
         existingResource.setDescription(request.getDescription());
-        existingResource.setCreatedBy(request.getCreatedBy());
+        existingResource.setCreatedBy(resolveCreatedBy(request.getCreatedBy()));
         existingResource.setStatus(request.getStatus() == null ? existingResource.getStatus() : request.getStatus());
         existingResource.setAvailabilityWindows(request.getAvailabilityWindows() == null
                 ? new ArrayList<>()
@@ -111,9 +114,21 @@ public class ResourceService {
                 .status(resource.getStatus())
                 .description(resource.getDescription())
                 .availabilityWindows(resource.getAvailabilityWindows())
-                .createdBy(resource.getCreatedBy())
+                .createdBy(resource.getCreatedBy() == null ? null : resource.getCreatedBy().toHexString())
                 .createdAt(resource.getCreatedAt())
                 .updatedAt(resource.getUpdatedAt())
                 .build();
+    }
+
+    private ObjectId resolveCreatedBy(String createdBy) {
+        if (createdBy == null || createdBy.isBlank()) {
+            return DEFAULT_CREATED_BY;
+        }
+
+        try {
+            return new ObjectId(createdBy);
+        } catch (IllegalArgumentException exception) {
+            return DEFAULT_CREATED_BY;
+        }
     }
 }

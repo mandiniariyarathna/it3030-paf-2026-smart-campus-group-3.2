@@ -3,6 +3,7 @@ package com.smartcampus.resource.config;
 import java.time.DayOfWeek;
 import java.util.List;
 
+import org.bson.types.ObjectId;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +16,8 @@ import com.smartcampus.resource.repository.ResourceRepository;
 
 @Configuration
 public class ResourceDataSeeder {
+
+        private static final ObjectId ADMIN_ID = new ObjectId("660000000000000000000001");
 
     @Bean
     CommandLineRunner seedResources(ResourceRepository resourceRepository) {
@@ -30,7 +33,7 @@ public class ResourceDataSeeder {
                     .location("Block A, Floor 1")
                     .status(ResourceStatus.ACTIVE)
                     .description("Large lecture hall with projector and audio system")
-                    .createdBy("seed-admin")
+                    .createdBy(ADMIN_ID)
                     .availabilityWindows(List.of(
                             AvailabilityWindow.builder().dayOfWeek(DayOfWeek.MONDAY).startTime("08:00")
                                     .endTime("18:00").build(),
@@ -45,7 +48,7 @@ public class ResourceDataSeeder {
                     .location("Block C, Floor 2")
                     .status(ResourceStatus.ACTIVE)
                     .description("High-performance machines for development and AI labs")
-                    .createdBy("seed-admin")
+                    .createdBy(ADMIN_ID)
                     .availabilityWindows(List.of(
                             AvailabilityWindow.builder().dayOfWeek(DayOfWeek.WEDNESDAY).startTime("09:00")
                                     .endTime("17:00").build(),
