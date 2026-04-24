@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8085').replace(/\/$/, '');
 
 const SIGNUP_ENDPOINT = '/api/auth/signup';
 const GOOGLE_AUTH_ENDPOINT = '/api/auth/google';
