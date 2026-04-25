@@ -24,11 +24,16 @@ import com.smartcampus.booking.dto.BookingResponseDTO;
 import com.smartcampus.booking.model.BookingStatus;
 import com.smartcampus.booking.service.BookingService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1")
 @Validated
+@Tag(name = "Bookings", description = "Booking request and workflow management APIs")
 public class BookingController {
 
     private final BookingService bookingService;
@@ -38,6 +43,8 @@ public class BookingController {
     }
 
     @PostMapping("/bookings")
+    @Operation(summary = "Create booking request", description = "Create a new booking as a user")
+    @ApiResponse(responseCode = "201", description = "Booking request created")
     public ResponseEntity<BookingResponseDTO> createBooking(@Valid @RequestBody BookingRequestDTO request) {
         BookingResponseDTO response = BookingResponseDTO.builder()
                 .success(true)
@@ -49,7 +56,10 @@ public class BookingController {
     }
 
     @GetMapping("/bookings")
+        @Operation(summary = "List bookings", description = "List bookings with user/admin scope and optional status filter")
+        @ApiResponse(responseCode = "200", description = "Bookings fetched successfully")
     public ResponseEntity<Map<String, Object>> getBookings(
+            @Parameter(description = "Filter by booking status")
             @RequestParam(required = false) BookingStatus status,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @RequestHeader(value = "X-User-Id", required = false) String userId) {
@@ -68,6 +78,8 @@ public class BookingController {
     }
 
     @GetMapping("/bookings/{id}")
+    @Operation(summary = "Get booking by id", description = "Retrieve booking details by booking id")
+    @ApiResponse(responseCode = "200", description = "Booking fetched successfully")
     public ResponseEntity<BookingResponseDTO> getBookingById(
             @PathVariable String id,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
@@ -87,6 +99,8 @@ public class BookingController {
     }
 
     @PutMapping("/bookings/{id}/approve")
+    @Operation(summary = "Approve booking", description = "Approve a pending booking (ADMIN only)")
+    @ApiResponse(responseCode = "200", description = "Booking approved successfully")
     public ResponseEntity<BookingResponseDTO> approveBooking(
             @PathVariable String id,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
@@ -104,6 +118,8 @@ public class BookingController {
     }
 
     @PutMapping("/bookings/{id}/reject")
+    @Operation(summary = "Reject booking", description = "Reject a pending booking with reason (ADMIN only)")
+    @ApiResponse(responseCode = "200", description = "Booking rejected successfully")
     public ResponseEntity<BookingResponseDTO> rejectBooking(
             @PathVariable String id,
             @RequestBody Map<String, String> request,
@@ -123,6 +139,8 @@ public class BookingController {
     }
 
     @PutMapping("/bookings/{id}/cancel")
+    @Operation(summary = "Cancel booking", description = "Cancel a booking as owner or admin")
+    @ApiResponse(responseCode = "200", description = "Booking cancelled successfully")
     public ResponseEntity<BookingResponseDTO> cancelBooking(
             @PathVariable String id,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
@@ -142,6 +160,8 @@ public class BookingController {
     }
 
     @GetMapping("/resources/{id}/bookings")
+    @Operation(summary = "List bookings for resource", description = "Get all bookings for a resource id")
+    @ApiResponse(responseCode = "200", description = "Resource bookings fetched successfully")
     public ResponseEntity<Map<String, Object>> getResourceBookings(@PathVariable String id) {
         List<BookingDTO> bookings = bookingService.getBookingsForResource(id);
 
