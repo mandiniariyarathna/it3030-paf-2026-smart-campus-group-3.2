@@ -103,6 +103,12 @@ function BookingRequestPage() {
     setSuccessMessage('');
 
     try {
+      if (form.startTime >= form.endTime) {
+        setError('Start time must be earlier than end time. Please choose a valid time range.');
+        setIsSubmitting(false);
+        return;
+      }
+
       await createBookingRequest({
         resourceId: form.resourceId,
         date: form.date,
@@ -115,7 +121,12 @@ function BookingRequestPage() {
       setSuccessMessage('Booking request submitted successfully. You can track it from My Bookings.');
       setForm(initialForm);
     } catch (submitError) {
-      setError(submitError.message || 'Unable to submit booking request.');
+      const message = submitError.message || 'Unable to submit booking request.';
+      if (message.toLowerCase().includes('conflict')) {
+        setError('This slot is already booked. Please select a different time range.');
+      } else {
+        setError(message);
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -42,7 +42,12 @@ function AdminBookingsPage() {
       await loadBookings(statusFilter);
       setSelectedBooking(null);
     } catch (approveError) {
-      setError(approveError.message || 'Unable to approve booking.');
+      const message = approveError.message || 'Unable to approve booking.';
+      if (message.toLowerCase().includes('conflict')) {
+        setError('Approval failed: another approved booking overlaps with this time slot.');
+      } else {
+        setError(message);
+      }
     }
   };
 
