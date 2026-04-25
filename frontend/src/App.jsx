@@ -3,6 +3,9 @@ import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-r
 import { authenticateWithGoogle } from './services/authService';
 import ResourcesPage from './pages/ResourcesPage';
 import ResourceDetailPage from './pages/ResourceDetailPage';
+import BookingRequestPage from './pages/BookingRequestPage';
+import MyBookingsPage from './pages/MyBookingsPage';
+import AdminBookingsPage from './pages/AdminBookingsPage';
 
 const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
@@ -1039,11 +1042,14 @@ function HomePage() {
             experience.
           </p>
           <div className="home-actions">
-            <button type="button" className="home-btn home-btn-primary">
-              Open Dashboard
-            </button>
+            <Link to="/bookings/new" className="home-btn home-btn-primary link-btn">
+              Request Booking
+            </Link>
             <Link to="/resources" className="home-btn home-btn-outline link-btn">
               Browse Resources
+            </Link>
+            <Link to="/my-bookings" className="home-btn home-btn-outline link-btn">
+              My Bookings
             </Link>
           </div>
         </div>
@@ -1136,9 +1142,9 @@ function AdminDashboardPage() {
             <Link to="/resources" className="home-btn home-btn-primary link-btn">
               Manage Resources
             </Link>
-            <button type="button" className="home-btn home-btn-outline">
-              Review Audit Log
-            </button>
+            <Link to="/admin/bookings" className="home-btn home-btn-outline link-btn">
+              Review Booking Requests
+            </Link>
           </div>
         </div>
 
@@ -1198,6 +1204,9 @@ function App() {
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/admin-login" element={<AdminLoginPage />} />
       <Route path="/home" element={<HomePage />} />
+      <Route path="/bookings/new" element={<BookingRequestPage />} />
+      <Route path="/my-bookings" element={<MyBookingsPage />} />
+      <Route path="/admin/bookings" element={<AdminBookingsPage />} />
       <Route path="/resources" element={<ResourcesPage />} />
       <Route path="/resources/:id" element={<ResourceDetailPage />} />
       <Route path="/admin" element={<AdminDashboardPage />} />
