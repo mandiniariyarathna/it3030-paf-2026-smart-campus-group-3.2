@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { createBookingRequest } from '../services/bookingService';
+import { createBookingRequest, getBookingsForResource } from '../services/bookingService';
 import { getResources } from '../services/resourceService';
 
 const initialForm = {
@@ -20,6 +20,8 @@ function BookingRequestPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [conflicts, setConflicts] = useState([]);
+  const [isCheckingConflicts, setIsCheckingConflicts] = useState(false);
 
   useEffect(() => {
     const loadResources = async () => {
@@ -43,6 +45,39 @@ function BookingRequestPage() {
     () => resources.find((resource) => resource.id === form.resourceId),
     [resources, form.resourceId]
   );
+
+  useEffect(() => {
+    const shouldCheckConflicts =
+      form.resourceId && form.date && form.startTime && form.endTime;
+
+    if (!shouldCheckConflicts) {
+      setConflicts([]);
+      return;
+    }
+
+    const findConflicts = async () => {
+      setIsCheckingConflicts(true);
+
+      try {
+        const bookings = await getBookingsForResource(form.resourceId);
+        const overlapping = bookings.filter((booking) => {
+          if (booking.status !== 'APPROVED' || booking.date !== form.date) {
+            return false;
+          }
+
+          return booking.startTime < form.endTime && booking.endTime > form.startTime;
+        });
+
+        setConflicts(overlapping);
+      } catch {
+        setConflicts([]);
+      } finally {
+        setIsCheckingConflicts(false);
+      }
+    };
+
+    findConflicts();
+  }, [form.resourceId, form.date, form.startTime, form.endTime]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -174,10 +209,29 @@ function BookingRequestPage() {
             </p>
           ) : null}
 
+          {isCheckingConflicts ? <p className="booking-hint">Checking slot availability...</p> : null}
+
+          {!isCheckingConflicts && conflicts.length > 0 ? (
+            <div className="booking-conflict-box" role="alert">
+              <p className="field-error">Selected slot overlaps with approved bookings.</p>
+              <ul>
+                {conflicts.map((conflict) => (
+                  <li key={conflict.id}>
+                    {conflict.startTime} - {conflict.endTime} ({conflict.purpose})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           {error ? <p className="field-error">{error}</p> : null}
           {successMessage ? <p className="form-success">{successMessage}</p> : null}
 
-          <button type="submit" className="primary-btn" disabled={isSubmitting || isLoadingResources}>
+          <button
+            type="submit"
+            className="primary-btn"
+            disabled={isSubmitting || isLoadingResources || conflicts.length > 0}
+          >
             {isSubmitting ? 'Submitting...' : 'Submit Booking Request'}
           </button>
         </form>
