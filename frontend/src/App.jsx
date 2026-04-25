@@ -8,6 +8,126 @@ const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
   '384649476958-c6b17p693e4kt4spnovf3qnm8danqlt0.apps.googleusercontent.com';
 
+const ROLE_USER = 'user';
+const ROLE_TECHNICIAN = 'technician';
+const ROLE_ADMIN = 'admin';
+
+const ACCOUNT_STORAGE_KEY = 'smart-campus-accounts';
+const SESSION_STORAGE_KEY = 'smart-campus-session';
+
+const ADMIN_USERNAME = 'admin';
+const ADMIN_PASSWORD = 'Admin@1234';
+
+const ROLE_OPTIONS = [
+  { value: ROLE_USER, label: 'User' },
+  { value: ROLE_TECHNICIAN, label: 'Technician' },
+];
+
+const ROLE_LABELS = {
+  [ROLE_USER]: 'User',
+  [ROLE_TECHNICIAN]: 'Technician',
+  [ROLE_ADMIN]: 'Admin',
+};
+
+function canUseStorage() {
+  return typeof window !== 'undefined';
+}
+
+function readStoredJson(key, fallbackValue) {
+  if (!canUseStorage()) {
+    return fallbackValue;
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(key);
+    return rawValue ? JSON.parse(rawValue) : fallbackValue;
+  } catch {
+    return fallbackValue;
+  }
+}
+
+function writeStoredJson(key, value) {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getStoredAccounts() {
+  return readStoredJson(ACCOUNT_STORAGE_KEY, []);
+}
+
+function saveAccounts(accounts) {
+  writeStoredJson(ACCOUNT_STORAGE_KEY, accounts);
+}
+
+function getStoredSession() {
+  return readStoredJson(SESSION_STORAGE_KEY, null);
+}
+
+function saveSession(session) {
+  writeStoredJson(SESSION_STORAGE_KEY, session);
+}
+
+function clearSession() {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  window.localStorage.removeItem(SESSION_STORAGE_KEY);
+}
+
+function createDisplayName(account) {
+  const combinedName = [account.fullName, account.lastName].filter(Boolean).join(' ').trim();
+  return combinedName || account.username || 'Student';
+}
+
+function createSessionFromAccount(account) {
+  return {
+    role: account.role,
+    displayName: account.displayName,
+    email: account.email,
+    username: account.username,
+  };
+}
+
+function findAccountByEmail(email) {
+  const normalizedEmail = email.trim().toLowerCase();
+  return getStoredAccounts().find((account) => account.email.toLowerCase() === normalizedEmail);
+}
+
+function findAccountByCredentials(email, password) {
+  const normalizedEmail = email.trim().toLowerCase();
+  return getStoredAccounts().find(
+    (account) => account.email.toLowerCase() === normalizedEmail && account.password === password,
+  );
+}
+
+function saveAccount(account) {
+  const accounts = getStoredAccounts();
+  const duplicateAccount = accounts.find(
+    (existingAccount) =>
+      existingAccount.email.toLowerCase() === account.email.toLowerCase() ||
+      existingAccount.username.toLowerCase() === account.username.toLowerCase(),
+  );
+
+  if (duplicateAccount) {
+    throw new Error('An account with this email or username already exists.');
+  }
+
+  accounts.push(account);
+  saveAccounts(accounts);
+}
+
+function getSessionRedirectPath(session) {
+  if (!session) {
+    return '/login';
+  }
+
+  return session.role === ROLE_ADMIN ? '/admin' : '/home';
+}
+
 function GoogleSignInButton({ onCredential, onError }) {
   const googleButtonRef = useRef(null);
 
@@ -47,7 +167,6 @@ function GoogleSignInButton({ onCredential, onError }) {
 }
 
 function AuthLayout({
-  mode,
   badge,
   title,
   subtitle,
@@ -56,22 +175,36 @@ function AuthLayout({
   helperText,
   helperLinkTo,
   helperLinkText,
+  secondaryActionText,
+  secondaryActionTo,
+  secondaryActionLinkText,
+  eyebrow = 'Smart Campus Platform',
+  asideTitle = 'Welcome back.',
+  asideCopy,
+  highlights,
   onSubmit,
   children,
 }) {
+  const highlightItems =
+    highlights || [
+      'Simple, secure authentication',
+      'Clean access to your dashboard',
+      'Built for a modern campus workflow',
+    ];
+
   return (
     <main className="auth-page">
-      <section className="auth-card" aria-label={`${mode} form`}>
+      <section className="auth-card" aria-label="authentication form">
         <aside className="auth-aside">
-          <p className="eyebrow">Smart Campus Platform</p>
-          <h1>Welcome back.</h1>
+          <p className="eyebrow">{eyebrow}</p>
+          <h1>{asideTitle}</h1>
           <p className="aside-copy">
-            Sign in to access your campus workspace and continue where you left off.
+            {asideCopy || 'Sign in to access your campus workspace and continue where you left off.'}
           </p>
           <ul className="benefits-list" aria-label="Platform highlights">
-            <li>Simple, secure authentication</li>
-            <li>Clean access to your dashboard</li>
-            <li>Built for a modern campus workflow</li>
+            {highlightItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
           </ul>
         </aside>
 
@@ -87,12 +220,23 @@ function AuthLayout({
             </button>
           </form>
 
-          <p className="helper-text">
-            {helperText}{' '}
-            <Link to={helperLinkTo} className="helper-link">
-              {helperLinkText}
-            </Link>
-          </p>
+          {secondaryActionText && secondaryActionTo && secondaryActionLinkText ? (
+            <p className="helper-text helper-text-secondary">
+              {secondaryActionText}{' '}
+              <Link to={secondaryActionTo} className="helper-link">
+                {secondaryActionLinkText}
+              </Link>
+            </p>
+          ) : null}
+
+          {helperText && helperLinkTo && helperLinkText ? (
+            <p className="helper-text">
+              {helperText}{' '}
+              <Link to={helperLinkTo} className="helper-link">
+                {helperLinkText}
+              </Link>
+            </p>
+          ) : null}
         </section>
       </section>
     </main>
@@ -101,13 +245,14 @@ function AuthLayout({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loginData, setLoginData] = useState({
     email: '',
     password: '',
   });
   const [loginErrors, setLoginErrors] = useState({});
   const [loginTouched, setLoginTouched] = useState({});
-  const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] = useState(location.state?.notice || '');
 
   const validateLoginField = (fieldName, fieldValue) => {
     const trimmedValue = fieldValue.trim();
@@ -194,14 +339,24 @@ function LoginPage() {
       return;
     }
 
-    setSubmitError('');
+    const account = findAccountByCredentials(loginData.email, loginData.password);
 
-    const identity = loginData.email.trim();
-    const displayName = identity.includes('@') ? identity.split('@')[0] : identity;
+    if (!account) {
+      setSubmitError('No matching user or technician account was found.');
+      return;
+    }
 
+    if (account.role === ROLE_ADMIN) {
+      setSubmitError('Admin accounts must sign in from the admin access page.');
+      return;
+    }
+
+    const session = createSessionFromAccount(account);
+    saveSession(session);
     navigate('/home', {
       state: {
-        displayName: displayName || 'Student',
+        displayName: account.displayName,
+        role: account.role,
       },
     });
   };
@@ -210,9 +365,22 @@ function LoginPage() {
     try {
       setSubmitError('');
       const response = await authenticateWithGoogle(credential);
+      const matchedAccount = response.email ? findAccountByEmail(response.email) : null;
+      const role = matchedAccount?.role || ROLE_USER;
+      const displayName =
+        response.displayName || matchedAccount?.displayName || response.email?.split('@')[0] || 'Campus User';
+
+      saveSession({
+        role,
+        displayName,
+        email: response.email || matchedAccount?.email || '',
+        username: matchedAccount?.username || '',
+      });
+
       navigate('/home', {
         state: {
-          displayName: response.displayName || 'Student',
+          displayName,
+          role,
         },
       });
     } catch (error) {
@@ -222,7 +390,6 @@ function LoginPage() {
 
   return (
     <AuthLayout
-      mode="login"
       badge="Login"
       title="Access your account"
       subtitle="Use your university credentials to continue."
@@ -230,6 +397,11 @@ function LoginPage() {
       helperText="Don't have an account?"
       helperLinkTo="/signup"
       helperLinkText="Create one"
+      secondaryActionText="Need admin access?"
+      secondaryActionTo="/admin-login"
+      secondaryActionLinkText="Open admin sign in"
+      asideTitle="Welcome back."
+      asideCopy="Sign in to access your campus workspace and continue where you left off."
       onSubmit={handleLoginSubmit}
     >
       <label htmlFor="login-email">Username</label>
@@ -287,6 +459,7 @@ function SignupPage() {
     mobileNumber: '',
     email: '',
     password: '',
+    role: ROLE_USER,
   });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -296,9 +469,19 @@ function SignupPage() {
     try {
       setSubmitError('');
       const response = await authenticateWithGoogle(credential);
+      const displayName = response.displayName || response.email?.split('@')[0] || 'Campus User';
+
+      saveSession({
+        role: ROLE_USER,
+        displayName,
+        email: response.email || '',
+        username: response.email?.split('@')[0] || '',
+      });
+
       navigate('/home', {
         state: {
-          displayName: response.displayName || 'Student',
+          displayName,
+          role: ROLE_USER,
         },
       });
     } catch (error) {
@@ -367,6 +550,12 @@ function SignupPage() {
         }
         return '';
       }
+      case 'role': {
+        if (![ROLE_USER, ROLE_TECHNICIAN].includes(fieldValue)) {
+          return 'Choose User or Technician.';
+        }
+        return '';
+      }
       default:
         return '';
     }
@@ -419,7 +608,7 @@ function SignupPage() {
     }));
   };
 
-  const handleSignupSubmit = async (event) => {
+  const handleSignupSubmit = (event) => {
     event.preventDefault();
 
     const nextErrors = validateForm(formData);
@@ -431,6 +620,7 @@ function SignupPage() {
       mobileNumber: true,
       email: true,
       password: true,
+      role: true,
     });
 
     if (Object.keys(nextErrors).length > 0) {
@@ -438,25 +628,44 @@ function SignupPage() {
       return;
     }
 
-    setSubmitError('');
+    try {
+      const account = {
+        fullName: formData.fullName.trim(),
+        lastName: formData.lastName.trim(),
+        username: formData.username.trim(),
+        mobileNumber: formData.mobileNumber.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        role: formData.role,
+        displayName: createDisplayName(formData),
+      };
 
-    navigate('/home', {
-      state: {
-        displayName: formData.fullName.trim() || formData.username.trim() || 'Student',
-      },
-    });
+      saveAccount(account);
+      saveSession(createSessionFromAccount(account));
+
+      navigate('/home', {
+        state: {
+          displayName: account.displayName,
+          role: account.role,
+        },
+      });
+    } catch (error) {
+      setSubmitError(error.message || 'Signup failed. Please try again.');
+    }
   };
 
   return (
     <AuthLayout
-      mode="signup"
       badge="Sign Up"
       title="Create your account"
-      subtitle="Register once to unlock the Smart Campus experience."
+      subtitle="Register once to unlock the Smart Campus experience as a User or Technician."
       buttonText="Create Account"
       helperText="Already have an account?"
       helperLinkTo="/login"
       helperLinkText="Sign in"
+      asideTitle="Join the platform."
+      asideCopy="Pick the role that matches your campus work. Admin access is managed separately and is not available here."
+      highlights={['Register as a User or Technician', 'Keep campus access organized by role', 'Admin accounts stay restricted']}
       onSubmit={handleSignupSubmit}
     >
       <label htmlFor="signup-full-name">Full Name</label>
@@ -513,6 +722,31 @@ function SignupPage() {
       {touched.username && errors.username ? (
         <p className="field-error" id="signup-username-error">
           {errors.username}
+        </p>
+      ) : null}
+
+      <label htmlFor="signup-role">Account Role</label>
+      <select
+        id="signup-role"
+        name="role"
+        value={formData.role}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        aria-invalid={Boolean(touched.role && errors.role)}
+        aria-describedby="signup-role-help signup-role-error"
+      >
+        {ROLE_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <p className="field-help" id="signup-role-help">
+        Choose the role for this account. Admin access is created separately.
+      </p>
+      {touched.role && errors.role ? (
+        <p className="field-error" id="signup-role-error">
+          {errors.role}
         </p>
       ) : null}
 
@@ -580,16 +814,197 @@ function SignupPage() {
   );
 }
 
-function HomePage() {
+function AdminLoginPage() {
+  const navigate = useNavigate();
   const location = useLocation();
-  const displayName = location.state?.displayName || 'Student';
+  const [adminData, setAdminData] = useState({
+    username: '',
+    password: '',
+  });
+  const [adminErrors, setAdminErrors] = useState({});
+  const [adminTouched, setAdminTouched] = useState({});
+  const [submitError, setSubmitError] = useState(location.state?.notice || '');
+
+  const validateAdminField = (fieldName, fieldValue) => {
+    switch (fieldName) {
+      case 'username':
+        return fieldValue.trim() ? '' : 'Admin username is required.';
+      case 'password':
+        return fieldValue ? '' : 'Admin password is required.';
+      default:
+        return '';
+    }
+  };
+
+  const handleAdminChange = (event) => {
+    const { name, value } = event.target;
+
+    setAdminData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+
+    if (adminTouched[name]) {
+      setAdminErrors((previous) => ({
+        ...previous,
+        [name]: validateAdminField(name, value),
+      }));
+    }
+
+    if (submitError) {
+      setSubmitError('');
+    }
+  };
+
+  const handleAdminBlur = (event) => {
+    const { name, value } = event.target;
+
+    setAdminTouched((previous) => ({
+      ...previous,
+      [name]: true,
+    }));
+
+    setAdminErrors((previous) => ({
+      ...previous,
+      [name]: validateAdminField(name, value),
+    }));
+  };
+
+  const handleAdminSubmit = (event) => {
+    event.preventDefault();
+
+    const nextErrors = {
+      username: validateAdminField('username', adminData.username),
+      password: validateAdminField('password', adminData.password),
+    };
+
+    Object.keys(nextErrors).forEach((fieldName) => {
+      if (!nextErrors[fieldName]) {
+        delete nextErrors[fieldName];
+      }
+    });
+
+    setAdminErrors(nextErrors);
+    setAdminTouched({
+      username: true,
+      password: true,
+    });
+
+    if (Object.keys(nextErrors).length > 0) {
+      setSubmitError('Please fill in the admin credentials.');
+      return;
+    }
+
+    if (adminData.username.trim() !== ADMIN_USERNAME || adminData.password !== ADMIN_PASSWORD) {
+      setSubmitError('Invalid admin credentials. Use the administrator sign in.');
+      return;
+    }
+
+    const session = {
+      role: ROLE_ADMIN,
+      displayName: 'Administrator',
+      username: ADMIN_USERNAME,
+      email: `${ADMIN_USERNAME}@smartcampus.local`,
+    };
+
+    saveSession(session);
+    navigate('/admin', {
+      state: {
+        displayName: session.displayName,
+        role: session.role,
+      },
+    });
+  };
 
   return (
-    <main className="home-page">
+    <AuthLayout
+      badge="Admin Access"
+      title="Administrator sign in"
+      subtitle="Restricted access for campus administrators only."
+      buttonText="Enter Admin Panel"
+      helperText="Need a standard account?"
+      helperLinkTo="/login"
+      helperLinkText="Go to user sign in"
+      asideTitle="Control center."
+      asideCopy="Use this access path only for administrators. User and Technician accounts are blocked from admin pages."
+      highlights={['Separate admin credentials', 'Protected access to privileged actions', 'User and Technician roles stay outside admin pages']}
+      onSubmit={handleAdminSubmit}
+    >
+      <label htmlFor="admin-username">Admin Username</label>
+      <input
+        id="admin-username"
+        type="text"
+        name="username"
+        placeholder="Enter admin username"
+        autoComplete="username"
+        value={adminData.username}
+        onChange={handleAdminChange}
+        onBlur={handleAdminBlur}
+        aria-invalid={Boolean(adminTouched.username && adminErrors.username)}
+        aria-describedby="admin-username-error"
+      />
+      {adminTouched.username && adminErrors.username ? (
+        <p className="field-error" id="admin-username-error">
+          {adminErrors.username}
+        </p>
+      ) : null}
+
+      <label htmlFor="admin-password">Admin Password</label>
+      <input
+        id="admin-password"
+        type="password"
+        name="password"
+        placeholder="Enter admin password"
+        autoComplete="current-password"
+        value={adminData.password}
+        onChange={handleAdminChange}
+        onBlur={handleAdminBlur}
+        aria-invalid={Boolean(adminTouched.password && adminErrors.password)}
+        aria-describedby="admin-password-error"
+      />
+      {adminTouched.password && adminErrors.password ? (
+        <p className="field-error" id="admin-password-error">
+          {adminErrors.password}
+        </p>
+      ) : null}
+
+      {submitError ? <p className="field-error">{submitError}</p> : null}
+    </AuthLayout>
+  );
+}
+
+function HomePage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const session = getStoredSession();
+  const displayName = location.state?.displayName || session?.displayName || 'Campus Member';
+  const role = location.state?.role || session?.role || ROLE_USER;
+  const roleLabel = ROLE_LABELS[role] || ROLE_LABELS[ROLE_USER];
+
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (session.role === ROLE_ADMIN) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  const handleSignOut = () => {
+    clearSession();
+    navigate('/login', {
+      replace: true,
+    });
+  };
+
+  return (
+    <main className="home-page home-page-user">
       <section className="home-hero" aria-label="home intro">
         <div className="home-hero-copy">
           <p className="home-kicker">Smart Campus Workspace</p>
-          <h1>Welcome, {displayName}</h1>
+          <h1>
+            Welcome, {displayName}
+            <span className="home-role-pill">{roleLabel}</span>
+          </h1>
           <p>
             Manage academics, campus services, and your daily tasks in one professional dashboard
             experience.
@@ -639,22 +1054,124 @@ function HomePage() {
       </section>
 
       <nav className="home-nav-links" aria-label="session links">
-        <Link to="/login">Sign out</Link>
+        <button type="button" className="home-link-button" onClick={handleSignOut}>
+          Sign out
+        </button>
         <Link to="/signup">Create another account</Link>
       </nav>
     </main>
   );
 }
 
+function AdminDashboardPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const session = getStoredSession();
+  const displayName = location.state?.displayName || session?.displayName || 'Administrator';
+
+  if (!session) {
+    return <Navigate to="/admin-login" replace state={{ notice: 'Please sign in as an admin first.' }} />;
+  }
+
+  if (session.role !== ROLE_ADMIN) {
+    return (
+      <Navigate
+        to="/admin-login"
+        replace
+        state={{ notice: 'Admin pages are restricted to administrator accounts only.' }}
+      />
+    );
+  }
+
+  const handleSignOut = () => {
+    clearSession();
+    navigate('/login', {
+      replace: true,
+    });
+  };
+
+  return (
+    <main className="home-page admin-page">
+      <section className="home-hero admin-hero" aria-label="admin intro">
+        <div className="home-hero-copy">
+          <p className="home-kicker">Admin Control Panel</p>
+          <h1>
+            Welcome, {displayName}
+            <span className="home-role-pill home-role-pill-admin">Admin</span>
+          </h1>
+          <p>
+            Review campus operations, manage privileged workflows, and keep restricted tools in one
+            controlled space.
+          </p>
+          <div className="home-actions">
+            <button type="button" className="home-btn home-btn-primary">
+              Open Admin Tools
+            </button>
+            <button type="button" className="home-btn home-btn-outline">
+              Review Audit Log
+            </button>
+          </div>
+        </div>
+
+        <div className="home-status-card admin-status-card" aria-label="admin summary">
+          <h2>Admin snapshot</h2>
+          <ul>
+            <li>
+              <span>Pending approvals</span>
+              <strong>4</strong>
+            </li>
+            <li>
+              <span>Open incidents</span>
+              <strong>1</strong>
+            </li>
+            <li>
+              <span>Restricted modules</span>
+              <strong>8 active</strong>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="home-grid admin-grid" aria-label="admin tasks">
+        <article className="home-tile">
+          <h3>Account Oversight</h3>
+          <p>Review role assignments and confirm that access stays aligned with policy.</p>
+        </article>
+        <article className="home-tile">
+          <h3>Service Health</h3>
+          <p>Check the status of campus systems and respond to operational issues.</p>
+        </article>
+        <article className="home-tile">
+          <h3>Compliance Review</h3>
+          <p>Monitor activity logs and restricted actions for accountability.</p>
+        </article>
+      </section>
+
+      <nav className="home-nav-links" aria-label="admin session links">
+        <button type="button" className="home-link-button" onClick={handleSignOut}>
+          Sign out
+        </button>
+        <Link to="/admin-login">Return to admin sign in</Link>
+      </nav>
+    </main>
+  );
+}
+
+function RoleRedirect() {
+  return <Navigate to={getSessionRedirectPath(getStoredSession())} replace />;
+}
+
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<RoleRedirect />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/admin-login" element={<AdminLoginPage />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/resources" element={<ResourcesPage />} />
       <Route path="/resources/:id" element={<ResourceDetailPage />} />
+      <Route path="/admin" element={<AdminDashboardPage />} />
     </Routes>
   );
 }
