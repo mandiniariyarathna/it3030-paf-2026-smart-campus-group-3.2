@@ -2,6 +2,7 @@ package com.smartcampus.booking.model;
 
 import java.time.LocalDateTime;
 
+import org.bson.types.ObjectId;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -29,10 +30,10 @@ public class Booking {
     private String id;
 
     @NotNull(message = "User ID is required")
-    private String userId;
+    private ObjectId userId;
 
     @NotNull(message = "Resource ID is required")
-    private String resourceId;
+    private ObjectId resourceId;
 
     @NotBlank(message = "Date is required")
     private String date;
@@ -56,7 +57,7 @@ public class Booking {
     @Size(max = 500, message = "Rejection reason cannot exceed 500 characters")
     private String rejectionReason;
 
-    private String reviewedBy;
+    private ObjectId reviewedBy;
 
     private LocalDateTime reviewedAt;
 

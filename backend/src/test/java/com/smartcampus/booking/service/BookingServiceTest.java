@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,10 +40,11 @@ class BookingServiceTest {
     @Test
     void shouldRejectCreateBookingWhenConflictExists() {
         BookingRequestDTO request = buildRequest();
-        Booking approved = Booking.builder().id("b-1").resourceId("r-1").date(request.getDate())
+        ObjectId resourceId = new ObjectId("661000000000000000000001");
+        Booking approved = Booking.builder().id("b-1").resourceId(resourceId).date(request.getDate())
                 .startTime("10:00").endTime("11:00").status(BookingStatus.APPROVED).build();
 
-        when(bookingRepository.findConflictingBookings("r-1", request.getDate(), "10:30", "11:30"))
+        when(bookingRepository.findConflictingBookings(resourceId, request.getDate(), "10:30", "11:30"))
                 .thenReturn(List.of(approved));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -54,8 +56,9 @@ class BookingServiceTest {
     @Test
     void shouldCreateBookingWhenNoConflictExists() {
         BookingRequestDTO request = buildRequest();
+                ObjectId resourceId = new ObjectId("661000000000000000000001");
 
-        when(bookingRepository.findConflictingBookings("r-1", request.getDate(), "10:30", "11:30"))
+                when(bookingRepository.findConflictingBookings(resourceId, request.getDate(), "10:30", "11:30"))
                 .thenReturn(List.of());
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
             Booking booking = invocation.getArgument(0);
@@ -71,10 +74,12 @@ class BookingServiceTest {
 
     @Test
     void shouldApprovePendingBooking() {
+        ObjectId resourceId = new ObjectId("661000000000000000000001");
+        ObjectId userId = new ObjectId("660000000000000000000001");
         Booking pending = Booking.builder()
                 .id("book-1")
-                .userId("u-1")
-                .resourceId("r-1")
+                .userId(userId)
+                .resourceId(resourceId)
                 .date(LocalDate.now().plusDays(1).toString())
                 .startTime("10:00")
                 .endTime("11:00")
@@ -95,10 +100,11 @@ class BookingServiceTest {
 
     @Test
     void shouldPreventUserCancellingAnotherUsersBooking() {
+        ObjectId resourceId = new ObjectId("661000000000000000000001");
         Booking booking = Booking.builder()
                 .id("book-2")
-                .userId("owner")
-                .resourceId("r-1")
+                .userId(new ObjectId("660000000000000000000002"))
+                .resourceId(resourceId)
                 .date(LocalDate.now().plusDays(1).toString())
                 .startTime("09:00")
                 .endTime("10:00")
@@ -148,20 +154,21 @@ class BookingServiceTest {
 
     @Test
     void shouldReturnUserScopedBookings() {
-        Booking own = Booking.builder().id("own").userId("u-1").status(BookingStatus.PENDING).build();
+                ObjectId userId = new ObjectId("660000000000000000000001");
+                Booking own = Booking.builder().id("own").userId(userId).status(BookingStatus.PENDING).build();
 
-        when(bookingRepository.findByUserId("u-1")).thenReturn(List.of(own));
+                when(bookingRepository.findByUserId(userId)).thenReturn(List.of(own));
 
-        var results = bookingService.getBookings("USER", "u-1", null);
+                var results = bookingService.getBookings("USER", userId.toHexString(), null);
 
         assertEquals(1, results.size());
-        verify(bookingRepository).findByUserId("u-1");
+                verify(bookingRepository).findByUserId(userId);
     }
 
     private BookingRequestDTO buildRequest() {
         return BookingRequestDTO.builder()
                 .userId("u-1")
-                .resourceId("r-1")
+                                .resourceId("661000000000000000000001")
                 .date(LocalDate.now().plusDays(1).toString())
                 .startTime("10:30")
                 .endTime("11:30")

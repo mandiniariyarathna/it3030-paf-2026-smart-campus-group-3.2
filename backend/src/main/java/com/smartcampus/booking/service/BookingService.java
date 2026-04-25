@@ -1,10 +1,14 @@
 package com.smartcampus.booking.service;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
+import org.bson.types.ObjectId;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -27,8 +31,11 @@ public class BookingService {
     public BookingDTO createBooking(BookingRequestDTO request) {
         validateDateAndTime(request.getDate(), request.getStartTime(), request.getEndTime());
 
+        ObjectId userId = resolveBookingUserId(request.getUserId());
+        ObjectId resourceId = resolveRequiredObjectId(request.getResourceId(), "Resource ID");
+
         List<Booking> conflicts = bookingRepository.findConflictingBookings(
-                request.getResourceId(),
+                resourceId,
                 request.getDate(),
                 request.getStartTime(),
                 request.getEndTime());
@@ -38,8 +45,8 @@ public class BookingService {
         }
 
         Booking booking = Booking.builder()
-                .userId(request.getUserId())
-                .resourceId(request.getResourceId())
+                .userId(userId)
+                .resourceId(resourceId)
                 .date(request.getDate())
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
@@ -56,7 +63,7 @@ public class BookingService {
         if (isAdmin(userRole)) {
             bookings = status == null ? bookingRepository.findAll() : bookingRepository.findByStatus(status);
         } else {
-            bookings = bookingRepository.findByUserId(userId);
+            bookings = bookingRepository.findByUserId(resolveBookingUserId(userId));
             if (status != null) {
                 bookings = bookings.stream().filter(booking -> status == booking.getStatus()).toList();
             }
@@ -68,7 +75,7 @@ public class BookingService {
     public BookingDTO getBookingById(String bookingId, String userRole, String userId) {
         Booking booking = getBookingEntityById(bookingId);
 
-        if (!isAdmin(userRole) && !booking.getUserId().equals(userId)) {
+        if (!isAdmin(userRole) && !booking.getUserId().equals(resolveBookingUserId(userId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only access your own bookings");
         }
 
@@ -83,7 +90,7 @@ public class BookingService {
         }
 
         List<Booking> conflicts = bookingRepository.findConflictingBookings(
-                booking.getResourceId(),
+            booking.getResourceId(),
                 booking.getDate(),
                 booking.getStartTime(),
                 booking.getEndTime());
@@ -94,7 +101,7 @@ public class BookingService {
         }
 
         booking.setStatus(BookingStatus.APPROVED);
-        booking.setReviewedBy(reviewedBy);
+        booking.setReviewedBy(resolveBookingUserId(reviewedBy));
         booking.setReviewedAt(LocalDateTime.now());
         booking.setRejectionReason(null);
 
@@ -110,7 +117,7 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.REJECTED);
         booking.setRejectionReason(rejectionReason);
-        booking.setReviewedBy(reviewedBy);
+        booking.setReviewedBy(resolveBookingUserId(reviewedBy));
         booking.setReviewedAt(LocalDateTime.now());
 
         return toDto(bookingRepository.save(booking));
@@ -119,7 +126,7 @@ public class BookingService {
     public BookingDTO cancelBooking(String bookingId, String userRole, String userId) {
         Booking booking = getBookingEntityById(bookingId);
 
-        if (!isAdmin(userRole) && !booking.getUserId().equals(userId)) {
+        if (!isAdmin(userRole) && !booking.getUserId().equals(resolveBookingUserId(userId))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only cancel your own bookings");
         }
 
@@ -128,15 +135,16 @@ public class BookingService {
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
-        booking.setReviewedBy(isAdmin(userRole) ? userId : booking.getReviewedBy());
+        booking.setReviewedBy(isAdmin(userRole) ? resolveBookingUserId(userId) : booking.getReviewedBy());
         booking.setReviewedAt(LocalDateTime.now());
 
         return toDto(bookingRepository.save(booking));
     }
 
     public List<BookingDTO> getBookingsForResource(String resourceId) {
-        return bookingRepository.findAll().stream()
-                .filter(booking -> resourceId.equals(booking.getResourceId()))
+        ObjectId resourceObjectId = resolveRequiredObjectId(resourceId, "Resource ID");
+
+        return bookingRepository.findByResourceId(resourceObjectId).stream()
                 .map(this::toDto)
                 .toList();
     }
@@ -149,8 +157,8 @@ public class BookingService {
     private BookingDTO toDto(Booking booking) {
         return BookingDTO.builder()
                 .id(booking.getId())
-                .userId(booking.getUserId())
-                .resourceId(booking.getResourceId())
+                .userId(booking.getUserId() == null ? null : booking.getUserId().toHexString())
+                .resourceId(booking.getResourceId() == null ? null : booking.getResourceId().toHexString())
                 .date(booking.getDate())
                 .startTime(booking.getStartTime())
                 .endTime(booking.getEndTime())
@@ -158,11 +166,51 @@ public class BookingService {
                 .expectedAttendees(booking.getExpectedAttendees())
                 .status(booking.getStatus())
                 .rejectionReason(booking.getRejectionReason())
-                .reviewedBy(booking.getReviewedBy())
+                .reviewedBy(booking.getReviewedBy() == null ? null : booking.getReviewedBy().toHexString())
                 .reviewedAt(booking.getReviewedAt())
                 .createdAt(booking.getCreatedAt())
                 .updatedAt(booking.getUpdatedAt())
                 .build();
+    }
+
+    private ObjectId resolveBookingUserId(String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+
+        if (ObjectId.isValid(value)) {
+            return new ObjectId(value);
+        }
+
+        return new ObjectId(hashToObjectIdHex(value));
+    }
+
+    private ObjectId resolveRequiredObjectId(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " is required");
+        }
+
+        if (!ObjectId.isValid(value)) {
+            throw new IllegalArgumentException(fieldName + " must be a valid MongoDB ObjectId");
+        }
+
+        return new ObjectId(value);
+    }
+
+    private String hashToObjectIdHex(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder(24);
+
+            for (int index = 0; index < 12; index++) {
+                builder.append(String.format("%02x", hash[index]));
+            }
+
+            return builder.toString();
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("Unable to generate booking user identifier", exception);
+        }
     }
 
     private void validateDateAndTime(String date, String startTime, String endTime) {

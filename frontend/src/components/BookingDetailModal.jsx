@@ -8,6 +8,7 @@ function BookingDetailModal({ booking, isAdmin, onClose, onApprove, onReject, on
   }
 
   const canAct = booking.status === 'PENDING';
+  const resourceLabel = booking.resourceName || booking.resourceId;
 
   return (
     <div className="booking-modal-overlay" role="dialog" aria-modal="true" aria-label="Booking details">
@@ -24,7 +25,7 @@ function BookingDetailModal({ booking, isAdmin, onClose, onApprove, onReject, on
             <strong>Purpose:</strong> {booking.purpose}
           </p>
           <p>
-            <strong>Resource ID:</strong> {booking.resourceId}
+            <strong>Resource:</strong> {resourceLabel}
           </p>
           <p>
             <strong>Date:</strong> {booking.date}

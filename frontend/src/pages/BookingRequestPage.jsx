@@ -23,6 +23,10 @@ function BookingRequestPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [conflicts, setConflicts] = useState([]);
   const [isCheckingConflicts, setIsCheckingConflicts] = useState(false);
+  const today = new Date();
+  const todayDateValue = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 10);
 
   useEffect(() => {
     const loadResources = async () => {
@@ -115,9 +119,13 @@ function BookingRequestPage() {
     setSuccessMessage('');
 
     try {
+      if (form.date < todayDateValue) {
+        setError('Booking date cannot be in the past. Please select today or a later date.');
+        return;
+      }
+
       if (form.startTime >= form.endTime) {
         setError('Start time must be earlier than end time. Please choose a valid time range.');
-        setIsSubmitting(false);
         return;
       }
 
@@ -186,7 +194,15 @@ function BookingRequestPage() {
           <div className="booking-form-grid">
             <div>
               <label htmlFor="date">Date</label>
-              <input id="date" type="date" name="date" value={form.date} onChange={handleChange} required />
+              <input
+                id="date"
+                type="date"
+                name="date"
+                value={form.date}
+                min={todayDateValue}
+                onChange={handleChange}
+                required
+              />
             </div>
             <div>
               <label htmlFor="startTime">Start Time</label>

@@ -4,6 +4,19 @@ import { Link } from 'react-router-dom';
 import BookingCard from '../components/BookingCard';
 import BookingDetailModal from '../components/BookingDetailModal';
 import { cancelBooking, getBookings } from '../services/bookingService';
+import { getResources } from '../services/resourceService';
+
+function attachResourceNames(bookings, resources) {
+  const resourceNameById = resources.reduce((accumulator, resource) => {
+    accumulator[resource.id] = resource.name;
+    return accumulator;
+  }, {});
+
+  return bookings.map((booking) => ({
+    ...booking,
+    resourceName: resourceNameById[booking.resourceId] || 'Unknown resource',
+  }));
+}
 
 function MyBookingsPage() {
   const [bookings, setBookings] = useState([]);
@@ -16,8 +29,8 @@ function MyBookingsPage() {
     setError('');
 
     try {
-      const data = await getBookings();
-      setBookings(data);
+      const [bookingData, resourceData] = await Promise.all([getBookings(), getResources()]);
+      setBookings(attachResourceNames(bookingData, resourceData));
     } catch (loadError) {
       setError(loadError.message || 'Unable to load your bookings.');
     } finally {

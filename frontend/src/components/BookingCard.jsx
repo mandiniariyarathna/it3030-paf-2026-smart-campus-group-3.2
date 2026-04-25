@@ -1,5 +1,6 @@
 function BookingCard({ booking, isAdmin, onView, onCancel, onApprove, onReject }) {
   const statusClass = `booking-status booking-status-${(booking.status || '').toLowerCase()}`;
+  const resourceLabel = booking.resourceName || booking.resourceId;
 
   return (
     <article className="booking-card">
@@ -8,11 +9,12 @@ function BookingCard({ booking, isAdmin, onView, onCancel, onApprove, onReject }
         <span className={statusClass}>{booking.status}</span>
       </header>
 
+      <p className="booking-resource-line">
+        <span>Resource</span>
+        <strong>{resourceLabel}</strong>
+      </p>
+
       <dl className="booking-meta">
-        <div>
-          <dt>Resource</dt>
-          <dd>{booking.resourceId}</dd>
-        </div>
         <div>
           <dt>Date</dt>
           <dd>{booking.date}</dd>
