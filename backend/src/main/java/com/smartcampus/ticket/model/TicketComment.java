@@ -2,6 +2,8 @@ package com.smartcampus.ticket.model;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +19,7 @@ public class TicketComment {
     private String authorId;
     private String content;
 
+    @JsonProperty("isEdited")
     @Builder.Default
     private boolean isEdited = false;
 
