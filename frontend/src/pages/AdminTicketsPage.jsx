@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import PriorityBadge from '../components/PriorityBadge';
 import TicketStatusBadge from '../components/TicketStatusBadge';
 import { assignTechnician, getTickets, updateTicketStatus } from '../services/ticketService';
+import { getTechnicians } from '../services/technicianService';
 
 const defaultFilters = {
   status: '',
@@ -14,10 +15,20 @@ const defaultFilters = {
 function AdminTicketsPage() {
   const [filters, setFilters] = useState(defaultFilters);
   const [tickets, setTickets] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   const queryFilters = useMemo(() => ({ ...filters }), [filters]);
+
+  const loadTechnicians = async () => {
+    try {
+      const data = await getTechnicians(true);
+      setTechnicians(data);
+    } catch (loadError) {
+      console.error('Failed to load technicians:', loadError);
+    }
+  };
 
   const loadTickets = async () => {
     setIsLoading(true);
@@ -35,16 +46,17 @@ function AdminTicketsPage() {
 
   useEffect(() => {
     loadTickets();
+    loadTechnicians();
   }, [queryFilters]);
 
-  const handleStatusUpdate = async (ticketId, status) => {
+  const handleStatusUpdate = async (ticketId, status, additionalData = {}) => {
     try {
       const payload = { status };
       if (status === 'RESOLVED') {
-        payload.resolutionNote = 'Resolved by maintenance team.';
+        payload.resolutionNote = additionalData.resolutionNote || 'Resolved by maintenance team.';
       }
       if (status === 'REJECTED') {
-        payload.rejectionReason = 'Insufficient evidence provided.';
+        payload.rejectionReason = additionalData.rejectionReason || 'Insufficient evidence provided.';
       }
 
       await updateTicketStatus(ticketId, payload);
@@ -54,18 +66,26 @@ function AdminTicketsPage() {
     }
   };
 
-  const handleAssign = async (ticketId) => {
-    const technicianId = window.prompt('Enter technician ID to assign:');
-    if (!technicianId?.trim()) {
+  const handleAssign = async (ticketId, technicianId) => {
+    if (!technicianId) {
       return;
     }
 
     try {
-      await assignTechnician(ticketId, technicianId.trim());
+      await assignTechnician(ticketId, technicianId);
       await loadTickets();
     } catch (assignError) {
       setError(assignError.message || 'Failed to assign technician.');
     }
+  };
+
+  const handleReject = async (ticketId) => {
+    const rejectionReason = window.prompt('Enter reason for rejection:');
+    if (!rejectionReason?.trim()) {
+      return;
+    }
+
+    await handleStatusUpdate(ticketId, 'REJECTED', { rejectionReason: rejectionReason.trim() });
   };
 
   return (
@@ -76,8 +96,8 @@ function AdminTicketsPage() {
           <h1>Admin / Technician Ticket Desk</h1>
           <p>Filter, assign, and progress incident tickets from one control panel.</p>
         </div>
-        <Link to="/tickets/create" className="ticket-link-btn ghost-btn">
-          Create Ticket
+        <Link to="/admin/technicians" className="ticket-link-btn ghost-btn">
+          Manage Technicians
         </Link>
       </header>
 
@@ -144,22 +164,26 @@ function AdminTicketsPage() {
                     <td>{ticket.assignedTechnicianId || 'Unassigned'}</td>
                     <td>
                       <div className="inline-actions">
-                        <button type="button" className="ghost-btn" onClick={() => handleAssign(ticket.id)}>
-                          Assign
-                        </button>
+                        <select
+                          value={ticket.assignedTechnicianId || ''}
+                          onChange={(e) => handleAssign(ticket.id, e.target.value)}
+                          disabled={ticket.status === 'REJECTED'}
+                          className="ghost-btn"
+                        >
+                          <option value="">Select Technician</option>
+                          {technicians.map((tech) => (
+                            <option key={tech.id} value={tech.id}>
+                              {tech.name} ({tech.specialization || 'General'})
+                            </option>
+                          ))}
+                        </select>
                         <button
                           type="button"
                           className="ghost-btn"
-                          onClick={() => handleStatusUpdate(ticket.id, 'IN_PROGRESS')}
+                          onClick={() => handleReject(ticket.id)}
+                          disabled={ticket.status !== 'OPEN'}
                         >
-                          Start
-                        </button>
-                        <button
-                          type="button"
-                          className="ghost-btn"
-                          onClick={() => handleStatusUpdate(ticket.id, 'RESOLVED')}
-                        >
-                          Resolve
+                          Reject
                         </button>
                       </div>
                     </td>
