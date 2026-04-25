@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { createBookingRequest, getBookingsForResource } from '../services/bookingService';
 import { getResources } from '../services/resourceService';
@@ -16,6 +16,7 @@ const initialForm = {
 function BookingRequestPage() {
   const [form, setForm] = useState(initialForm);
   const [resources, setResources] = useState([]);
+  const [searchParams] = useSearchParams();
   const [isLoadingResources, setIsLoadingResources] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -40,6 +41,17 @@ function BookingRequestPage() {
 
     loadResources();
   }, []);
+
+  useEffect(() => {
+    const resourceId = searchParams.get('resourceId');
+
+    if (resourceId) {
+      setForm((previous) => ({
+        ...previous,
+        resourceId,
+      }));
+    }
+  }, [searchParams]);
 
   const selectedResource = useMemo(
     () => resources.find((resource) => resource.id === form.resourceId),
@@ -138,7 +150,9 @@ function BookingRequestPage() {
         <div>
           <p className="home-kicker">Booking Management</p>
           <h1>Request a Resource Booking</h1>
-          <p className="booking-copy">Select an active resource and submit your preferred date and time slot.</p>
+          <p className="booking-copy">
+            Select an active resource from its own Book Now button and submit your preferred date and time slot.
+          </p>
         </div>
         <div className="booking-head-actions">
           <Link to="/my-bookings" className="ghost-btn booking-nav-link">

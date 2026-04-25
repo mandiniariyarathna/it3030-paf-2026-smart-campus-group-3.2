@@ -1042,9 +1042,6 @@ function HomePage() {
             experience.
           </p>
           <div className="home-actions">
-            <Link to="/bookings/new" className="home-btn home-btn-primary link-btn">
-              Request Booking
-            </Link>
             <Link to="/resources" className="home-btn home-btn-outline link-btn">
               Browse Resources
             </Link>

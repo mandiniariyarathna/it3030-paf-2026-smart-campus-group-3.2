@@ -101,9 +101,15 @@ function ResourceDetailPage() {
         )}
       </section>
 
-      <Link to="/resources" className="resource-link">
-        Back to Resources
-      </Link>
+      <section className="resource-detail-actions">
+        <Link to={`/bookings/new?resourceId=${resource.id}`} className="primary-btn link-btn book-now-btn">
+          Book Now
+        </Link>
+        <Link to="/resources" className="resource-link ghost-btn">
+          Back to Resources
+        </Link>
+      </section>
+
     </main>
   );
 }
