@@ -118,6 +118,45 @@ function saveAccount(account) {
   saveAccounts(accounts);
 }
 
+function updateStoredAccount(originalEmail, account) {
+  const accounts = getStoredAccounts();
+  const targetIndex = accounts.findIndex(
+    (existingAccount) => existingAccount.email.toLowerCase() === originalEmail.toLowerCase(),
+  );
+
+  if (targetIndex < 0) {
+    throw new Error('The selected account no longer exists. Refresh and try again.');
+  }
+
+  const hasDuplicate = accounts.some((existingAccount, index) => {
+    if (index === targetIndex) {
+      return false;
+    }
+
+    return (
+      existingAccount.email.toLowerCase() === account.email.toLowerCase() ||
+      existingAccount.username.toLowerCase() === account.username.toLowerCase()
+    );
+  });
+
+  if (hasDuplicate) {
+    throw new Error('Another account already uses this email or username.');
+  }
+
+  accounts[targetIndex] = account;
+  saveAccounts(accounts);
+}
+
+function deleteStoredAccount(email) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const accounts = getStoredAccounts();
+  const remainingAccounts = accounts.filter(
+    (existingAccount) => existingAccount.email.toLowerCase() !== normalizedEmail,
+  );
+
+  saveAccounts(remainingAccounts);
+}
+
 function getSessionRedirectPath(session) {
   if (!session) {
     return '/login';
@@ -1066,6 +1105,24 @@ function AdminDashboardPage() {
   const location = useLocation();
   const session = getStoredSession();
   const displayName = location.state?.displayName || session?.displayName || 'Administrator';
+  const [accounts, setAccounts] = useState(() =>
+    getStoredAccounts().filter((account) => account.role !== ROLE_ADMIN),
+  );
+  const [searchValue, setSearchValue] = useState('');
+  const [editingEmail, setEditingEmail] = useState('');
+  const [formData, setFormData] = useState({
+    fullName: '',
+    lastName: '',
+    username: '',
+    mobileNumber: '',
+    email: '',
+    password: '',
+    role: ROLE_USER,
+  });
+  const [formErrors, setFormErrors] = useState({});
+  const [formTouched, setFormTouched] = useState({});
+  const [formMessage, setFormMessage] = useState('');
+  const [formError, setFormError] = useState('');
 
   if (!session) {
     return <Navigate to="/admin-login" replace state={{ notice: 'Please sign in as an admin first.' }} />;
@@ -1081,6 +1138,264 @@ function AdminDashboardPage() {
     );
   }
 
+  const refreshAccounts = () => {
+    setAccounts(getStoredAccounts().filter((account) => account.role !== ROLE_ADMIN));
+  };
+
+  const resetForm = ({ clearMessage = true } = {}) => {
+    setFormData({
+      fullName: '',
+      lastName: '',
+      username: '',
+      mobileNumber: '',
+      email: '',
+      password: '',
+      role: ROLE_USER,
+    });
+    setFormErrors({});
+    setFormTouched({});
+    setEditingEmail('');
+    setFormError('');
+    if (clearMessage) {
+      setFormMessage('');
+    }
+  };
+
+  const validateManagedField = (fieldName, fieldValue, isEditMode) => {
+    const trimmedValue = fieldValue.trim();
+
+    switch (fieldName) {
+      case 'fullName':
+      case 'lastName': {
+        if (!trimmedValue) {
+          return `${fieldName === 'fullName' ? 'First name' : 'Last name'} is required.`;
+        }
+        if (!/^[A-Za-z][A-Za-z\s'-]{1,39}$/.test(trimmedValue)) {
+          return 'Use 2-40 letters with optional spaces, apostrophes, or dashes.';
+        }
+        return '';
+      }
+      case 'username': {
+        if (!trimmedValue) {
+          return 'Username is required.';
+        }
+        if (!/^[A-Za-z0-9._]{3,20}$/.test(trimmedValue)) {
+          return 'Use 3-20 letters, numbers, dots, or underscores.';
+        }
+        return '';
+      }
+      case 'mobileNumber': {
+        if (!trimmedValue) {
+          return 'Mobile number is required.';
+        }
+        if (!/^\+?[0-9]{10,15}$/.test(trimmedValue)) {
+          return 'Use 10-15 digits with optional + prefix.';
+        }
+        return '';
+      }
+      case 'email': {
+        if (!trimmedValue) {
+          return 'Email is required.';
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedValue)) {
+          return 'Enter a valid email address.';
+        }
+        return '';
+      }
+      case 'password': {
+        if (isEditMode && !fieldValue) {
+          return '';
+        }
+        if (!fieldValue) {
+          return 'Password is required.';
+        }
+        if (fieldValue.length < 8) {
+          return 'Password must be at least 8 characters.';
+        }
+        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/.test(fieldValue)) {
+          return 'Use upper, lower, number, and special character.';
+        }
+        return '';
+      }
+      case 'role': {
+        if (![ROLE_USER, ROLE_TECHNICIAN].includes(fieldValue)) {
+          return 'Select User or Technician.';
+        }
+        return '';
+      }
+      default:
+        return '';
+    }
+  };
+
+  const validateManagedForm = (values, isEditMode) => {
+    const nextErrors = {};
+
+    Object.keys(values).forEach((fieldName) => {
+      const error = validateManagedField(fieldName, values[fieldName], isEditMode);
+      if (error) {
+        nextErrors[fieldName] = error;
+      }
+    });
+
+    return nextErrors;
+  };
+
+  const handleManagedChange = (event) => {
+    const { name, value } = event.target;
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+
+    if (formTouched[name]) {
+      setFormErrors((previous) => ({
+        ...previous,
+        [name]: validateManagedField(name, value, Boolean(editingEmail)),
+      }));
+    }
+
+    if (formMessage) {
+      setFormMessage('');
+    }
+
+    if (formError) {
+      setFormError('');
+    }
+  };
+
+  const handleManagedBlur = (event) => {
+    const { name, value } = event.target;
+
+    setFormTouched((previous) => ({
+      ...previous,
+      [name]: true,
+    }));
+
+    setFormErrors((previous) => ({
+      ...previous,
+      [name]: validateManagedField(name, value, Boolean(editingEmail)),
+    }));
+  };
+
+  const handleEditAccount = (account) => {
+    setEditingEmail(account.email);
+    setFormData({
+      fullName: account.fullName || '',
+      lastName: account.lastName || '',
+      username: account.username || '',
+      mobileNumber: account.mobileNumber || '',
+      email: account.email || '',
+      password: '',
+      role: account.role || ROLE_USER,
+    });
+    setFormErrors({});
+    setFormTouched({});
+    setFormError('');
+    setFormMessage(`Editing ${account.displayName || account.username}. Leave password empty to keep current.`);
+  };
+
+  const handleDeleteAccount = (account) => {
+    const hasConfirmed = window.confirm(
+      `Delete ${account.displayName || account.username}? This action cannot be undone.`,
+    );
+
+    if (!hasConfirmed) {
+      return;
+    }
+
+    deleteStoredAccount(account.email);
+    refreshAccounts();
+
+    if (editingEmail && editingEmail.toLowerCase() === account.email.toLowerCase()) {
+      resetForm();
+    }
+
+    setFormMessage('Account removed successfully.');
+    setFormError('');
+  };
+
+  const handleManagedSubmit = (event) => {
+    event.preventDefault();
+
+    const isEditMode = Boolean(editingEmail);
+    const nextErrors = validateManagedForm(formData, isEditMode);
+
+    setFormErrors(nextErrors);
+    setFormTouched({
+      fullName: true,
+      lastName: true,
+      username: true,
+      mobileNumber: true,
+      email: true,
+      password: true,
+      role: true,
+    });
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFormError('Please fix the highlighted user fields.');
+      setFormMessage('');
+      return;
+    }
+
+    const existingAccount = isEditMode
+      ? accounts.find((account) => account.email.toLowerCase() === editingEmail.toLowerCase())
+      : null;
+
+    if (isEditMode && !existingAccount) {
+      setFormError('The selected account is no longer available.');
+      setFormMessage('');
+      return;
+    }
+
+    const accountPayload = {
+      fullName: formData.fullName.trim(),
+      lastName: formData.lastName.trim(),
+      username: formData.username.trim(),
+      mobileNumber: formData.mobileNumber.trim(),
+      email: formData.email.trim(),
+      role: formData.role,
+      password: isEditMode && !formData.password ? existingAccount.password : formData.password,
+      displayName: createDisplayName(formData),
+    };
+
+    try {
+      if (isEditMode) {
+        updateStoredAccount(editingEmail, accountPayload);
+        setFormMessage('User updated successfully.');
+      } else {
+        saveAccount(accountPayload);
+        setFormMessage('User created successfully.');
+      }
+
+      setFormError('');
+      refreshAccounts();
+      resetForm({ clearMessage: false });
+    } catch (error) {
+      setFormError(error.message || 'Unable to save this user right now.');
+      setFormMessage('');
+    }
+  };
+
+  const filteredAccounts = accounts.filter((account) => {
+    const searchable = [
+      account.fullName,
+      account.lastName,
+      account.displayName,
+      account.username,
+      account.email,
+      ROLE_LABELS[account.role],
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return searchable.includes(searchValue.trim().toLowerCase());
+  });
+
+  const technicianCount = accounts.filter((account) => account.role === ROLE_TECHNICIAN).length;
+
   const handleSignOut = () => {
     clearSession();
     navigate('/login', {
@@ -1089,68 +1404,246 @@ function AdminDashboardPage() {
   };
 
   return (
-    <main className="home-page admin-page">
-      <section className="home-hero admin-hero" aria-label="admin intro">
-        <div className="home-hero-copy">
-          <p className="home-kicker">Admin Control Panel</p>
-          <h1>
-            Welcome, {displayName}
-            <span className="home-role-pill home-role-pill-admin">Admin</span>
-          </h1>
-          <p>
-            Review campus operations, manage privileged workflows, and keep restricted tools in one
-            controlled space.
-          </p>
-          <div className="home-actions">
-            <button type="button" className="home-btn home-btn-primary">
-              Open Admin Tools
-            </button>
-            <button type="button" className="home-btn home-btn-outline">
-              Review Audit Log
-            </button>
+    <main className="admin-shell-page">
+      <aside className="admin-sidebar" aria-label="admin side panel">
+        <p className="admin-sidebar-kicker">Smart Campus</p>
+        <h2>Admin Panel</h2>
+        <p className="admin-sidebar-copy">Professional controls for secure account operations.</p>
+
+        <nav className="admin-sidebar-nav" aria-label="admin navigation">
+          <button type="button" className="admin-nav-item admin-nav-item-active">
+            User Management
+          </button>
+          <button type="button" className="admin-nav-item" disabled>
+            Access Policies
+          </button>
+          <button type="button" className="admin-nav-item" disabled>
+            Audit Trail
+          </button>
+        </nav>
+
+        <div className="admin-sidebar-footer">
+          <button type="button" className="home-link-button" onClick={handleSignOut}>
+            Sign out
+          </button>
+          <Link to="/admin-login">Return to admin sign in</Link>
+        </div>
+      </aside>
+
+      <section className="admin-main-content">
+        <header className="admin-main-header" aria-label="admin overview">
+          <div>
+            <p className="home-kicker">Admin Control Center</p>
+            <h1>
+              Welcome, {displayName}
+              <span className="home-role-pill home-role-pill-admin">Admin</span>
+            </h1>
+            <p>Manage users with role-aware access controls in one clean, controlled interface.</p>
           </div>
-        </div>
+          <div className="admin-header-stats">
+            <article>
+              <span>Total managed users</span>
+              <strong>{accounts.length}</strong>
+            </article>
+            <article>
+              <span>Technicians</span>
+              <strong>{technicianCount}</strong>
+            </article>
+            <article>
+              <span>Search results</span>
+              <strong>{filteredAccounts.length}</strong>
+            </article>
+          </div>
+        </header>
 
-        <div className="home-status-card admin-status-card" aria-label="admin summary">
-          <h2>Admin snapshot</h2>
-          <ul>
-            <li>
-              <span>Pending approvals</span>
-              <strong>4</strong>
-            </li>
-            <li>
-              <span>Open incidents</span>
-              <strong>1</strong>
-            </li>
-            <li>
-              <span>Restricted modules</span>
-              <strong>8 active</strong>
-            </li>
-          </ul>
-        </div>
+        <section className="admin-crud-card" aria-label="user management crud">
+          <div className="admin-crud-heading-row">
+            <div>
+              <h2>User Management</h2>
+              <p>Create, edit, search, and remove User or Technician accounts.</p>
+            </div>
+            <input
+              type="search"
+              className="admin-search"
+              placeholder="Search by name, username, email, or role"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              aria-label="search users"
+            />
+          </div>
+
+          <form className="admin-user-form" onSubmit={handleManagedSubmit} noValidate>
+            <div className="admin-field">
+              <label htmlFor="managed-full-name">First Name</label>
+              <input
+                id="managed-full-name"
+                name="fullName"
+                type="text"
+                placeholder="First name"
+                value={formData.fullName}
+                onChange={handleManagedChange}
+                onBlur={handleManagedBlur}
+                aria-invalid={Boolean(formTouched.fullName && formErrors.fullName)}
+              />
+              {formTouched.fullName && formErrors.fullName ? <p className="field-error">{formErrors.fullName}</p> : null}
+            </div>
+
+            <div className="admin-field">
+              <label htmlFor="managed-last-name">Last Name</label>
+              <input
+                id="managed-last-name"
+                name="lastName"
+                type="text"
+                placeholder="Last name"
+                value={formData.lastName}
+                onChange={handleManagedChange}
+                onBlur={handleManagedBlur}
+                aria-invalid={Boolean(formTouched.lastName && formErrors.lastName)}
+              />
+              {formTouched.lastName && formErrors.lastName ? <p className="field-error">{formErrors.lastName}</p> : null}
+            </div>
+
+            <div className="admin-field">
+              <label htmlFor="managed-username">Username</label>
+              <input
+                id="managed-username"
+                name="username"
+                type="text"
+                placeholder="Username"
+                value={formData.username}
+                onChange={handleManagedChange}
+                onBlur={handleManagedBlur}
+                aria-invalid={Boolean(formTouched.username && formErrors.username)}
+              />
+              {formTouched.username && formErrors.username ? <p className="field-error">{formErrors.username}</p> : null}
+            </div>
+
+            <div className="admin-field">
+              <label htmlFor="managed-mobile">Mobile Number</label>
+              <input
+                id="managed-mobile"
+                name="mobileNumber"
+                type="tel"
+                placeholder="+94771234567"
+                value={formData.mobileNumber}
+                onChange={handleManagedChange}
+                onBlur={handleManagedBlur}
+                aria-invalid={Boolean(formTouched.mobileNumber && formErrors.mobileNumber)}
+              />
+              {formTouched.mobileNumber && formErrors.mobileNumber ? (
+                <p className="field-error">{formErrors.mobileNumber}</p>
+              ) : null}
+            </div>
+
+            <div className="admin-field">
+              <label htmlFor="managed-email">Email</label>
+              <input
+                id="managed-email"
+                name="email"
+                type="email"
+                placeholder="name@campus.edu"
+                value={formData.email}
+                onChange={handleManagedChange}
+                onBlur={handleManagedBlur}
+                aria-invalid={Boolean(formTouched.email && formErrors.email)}
+              />
+              {formTouched.email && formErrors.email ? <p className="field-error">{formErrors.email}</p> : null}
+            </div>
+
+            <div className="admin-field">
+              <label htmlFor="managed-password">Password {editingEmail ? '(Optional while editing)' : ''}</label>
+              <input
+                id="managed-password"
+                name="password"
+                type="password"
+                placeholder={editingEmail ? 'Leave blank to keep existing password' : 'Set secure password'}
+                value={formData.password}
+                onChange={handleManagedChange}
+                onBlur={handleManagedBlur}
+                aria-invalid={Boolean(formTouched.password && formErrors.password)}
+              />
+              {formTouched.password && formErrors.password ? <p className="field-error">{formErrors.password}</p> : null}
+            </div>
+
+            <div className="admin-field admin-field-wide">
+              <label htmlFor="managed-role">Role</label>
+              <select
+                id="managed-role"
+                name="role"
+                value={formData.role}
+                onChange={handleManagedChange}
+                onBlur={handleManagedBlur}
+                aria-invalid={Boolean(formTouched.role && formErrors.role)}
+              >
+                {ROLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {formTouched.role && formErrors.role ? <p className="field-error">{formErrors.role}</p> : null}
+            </div>
+
+            <div className="admin-form-actions admin-field-wide">
+              <button type="submit" className="home-btn home-btn-primary">
+                {editingEmail ? 'Update User' : 'Create User'}
+              </button>
+              <button type="button" className="home-btn home-btn-outline" onClick={resetForm}>
+                Clear Form
+              </button>
+            </div>
+
+            {formError ? <p className="field-error admin-field-wide">{formError}</p> : null}
+            {formMessage ? <p className="form-success admin-field-wide">{formMessage}</p> : null}
+          </form>
+
+          <div className="admin-users-table-wrap" aria-label="managed accounts list">
+            <table className="admin-users-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Username</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Mobile</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAccounts.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="admin-empty-row">
+                      No users found for this search.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredAccounts.map((account) => (
+                    <tr key={account.email}>
+                      <td>{account.displayName || createDisplayName(account)}</td>
+                      <td>{account.username}</td>
+                      <td>{account.email}</td>
+                      <td>{ROLE_LABELS[account.role] || 'User'}</td>
+                      <td>{account.mobileNumber || '-'}</td>
+                      <td className="admin-action-buttons">
+                        <button type="button" className="home-btn home-btn-outline" onClick={() => handleEditAccount(account)}>
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="home-btn home-btn-primary admin-btn-danger"
+                          onClick={() => handleDeleteAccount(account)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </section>
-
-      <section className="home-grid admin-grid" aria-label="admin tasks">
-        <article className="home-tile">
-          <h3>Account Oversight</h3>
-          <p>Review role assignments and confirm that access stays aligned with policy.</p>
-        </article>
-        <article className="home-tile">
-          <h3>Service Health</h3>
-          <p>Check the status of campus systems and respond to operational issues.</p>
-        </article>
-        <article className="home-tile">
-          <h3>Compliance Review</h3>
-          <p>Monitor activity logs and restricted actions for accountability.</p>
-        </article>
-      </section>
-
-      <nav className="home-nav-links" aria-label="admin session links">
-        <button type="button" className="home-link-button" onClick={handleSignOut}>
-          Sign out
-        </button>
-        <Link to="/admin-login">Return to admin sign in</Link>
-      </nav>
     </main>
   );
 }
