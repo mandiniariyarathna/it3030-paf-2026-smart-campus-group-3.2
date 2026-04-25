@@ -78,7 +78,7 @@ class ResourceControllerIntegrationTest {
         mockMvc.perform(post("/api/v1/resources")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isForbidden());
     }
 
     @Test

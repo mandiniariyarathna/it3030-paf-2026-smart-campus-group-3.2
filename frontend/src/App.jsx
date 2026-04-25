@@ -97,10 +97,13 @@ function findAccountByEmail(email) {
   return getStoredAccounts().find((account) => account.email.toLowerCase() === normalizedEmail);
 }
 
-function findAccountByCredentials(email, password) {
-  const normalizedEmail = email.trim().toLowerCase();
+function findAccountByCredentials(identifier, password) {
+  const normalizedIdentifier = identifier.trim().toLowerCase();
   return getStoredAccounts().find(
-    (account) => account.email.toLowerCase() === normalizedEmail && account.password === password,
+    (account) =>
+      (account.email.toLowerCase() === normalizedIdentifier ||
+        account.username.toLowerCase() === normalizedIdentifier) &&
+      account.password === password,
   );
 }
 
@@ -260,10 +263,7 @@ function LoginPage() {
     switch (fieldName) {
       case 'email': {
         if (!trimmedValue) {
-          return 'Username is required.';
-        }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedValue)) {
-          return 'Enter a valid university email address.';
+          return 'Username or email is required.';
         }
         return '';
       }
@@ -339,10 +339,31 @@ function LoginPage() {
       return;
     }
 
+    const isAdminCredentialMatch =
+      loginData.email.trim() === ADMIN_USERNAME && loginData.password === ADMIN_PASSWORD;
+
+    if (isAdminCredentialMatch) {
+      const adminSession = {
+        role: ROLE_ADMIN,
+        displayName: 'Administrator',
+        username: ADMIN_USERNAME,
+        email: `${ADMIN_USERNAME}@smartcampus.local`,
+      };
+
+      saveSession(adminSession);
+      navigate('/admin', {
+        state: {
+          displayName: adminSession.displayName,
+          role: adminSession.role,
+        },
+      });
+      return;
+    }
+
     const account = findAccountByCredentials(loginData.email, loginData.password);
 
     if (!account) {
-      setSubmitError('No matching user or technician account was found.');
+      setSubmitError('No matching account was found.');
       return;
     }
 
@@ -407,10 +428,10 @@ function LoginPage() {
       <label htmlFor="login-email">Username</label>
       <input
         id="login-email"
-        type="email"
+        type="text"
         name="email"
-        placeholder="name@university.edu"
-        autoComplete="email"
+        placeholder="username or email"
+        autoComplete="username"
         value={loginData.email}
         onChange={handleLoginChange}
         onBlur={handleLoginBlur}
@@ -665,7 +686,11 @@ function SignupPage() {
       helperLinkText="Sign in"
       asideTitle="Join the platform."
       asideCopy="Pick the role that matches your campus work. Admin access is managed separately and is not available here."
-      highlights={['Register as a User or Technician', 'Keep campus access organized by role', 'Admin accounts stay restricted']}
+      highlights={[
+        'Register as a User or Technician',
+        'Keep campus access organized by role',
+        'Admin accounts stay restricted',
+      ]}
       onSubmit={handleSignupSubmit}
     >
       <label htmlFor="signup-full-name">Full Name</label>
@@ -927,7 +952,11 @@ function AdminLoginPage() {
       helperLinkText="Go to user sign in"
       asideTitle="Control center."
       asideCopy="Use this access path only for administrators. User and Technician accounts are blocked from admin pages."
-      highlights={['Separate admin credentials', 'Protected access to privileged actions', 'User and Technician roles stay outside admin pages']}
+      highlights={[
+        'Separate admin credentials',
+        'Protected access to privileged actions',
+        'User and Technician roles stay outside admin pages',
+      ]}
       onSubmit={handleAdminSubmit}
     >
       <label htmlFor="admin-username">Admin Username</label>
@@ -1104,9 +1133,9 @@ function AdminDashboardPage() {
             controlled space.
           </p>
           <div className="home-actions">
-            <button type="button" className="home-btn home-btn-primary">
-              Open Admin Tools
-            </button>
+            <Link to="/resources" className="home-btn home-btn-primary link-btn">
+              Manage Resources
+            </Link>
             <button type="button" className="home-btn home-btn-outline">
               Review Audit Log
             </button>

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.smartcampus.resource.dto.ResourceDTO;
 import com.smartcampus.resource.dto.ResourceRequestDTO;
@@ -144,7 +146,7 @@ public class ResourceController {
 
     private void validateAdminRole(String userRole) {
         if (userRole == null || !"ADMIN".equalsIgnoreCase(userRole)) {
-            throw new IllegalArgumentException("Admin role is required for this operation");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role is required for this operation");
         }
     }
 }

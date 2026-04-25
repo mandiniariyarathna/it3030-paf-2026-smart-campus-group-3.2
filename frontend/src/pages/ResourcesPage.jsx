@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import ResourceCard from '../components/ResourceCard';
 import ResourceFilter from '../components/ResourceFilter';
@@ -12,6 +13,15 @@ const defaultFilters = {
   capacity: '',
 };
 
+function getSessionRole() {
+  try {
+    const session = JSON.parse(window.localStorage.getItem('smart-campus-session') || 'null');
+    return (session?.role || '').toUpperCase();
+  } catch {
+    return '';
+  }
+}
+
 function ResourcesPage() {
   const [resources, setResources] = useState([]);
   const [filters, setFilters] = useState(defaultFilters);
@@ -21,7 +31,7 @@ function ResourcesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const isAdmin = (localStorage.getItem('userRole') || 'ADMIN').toUpperCase() === 'ADMIN';
+  const isAdmin = getSessionRole() === 'ADMIN';
 
   const queryFilters = useMemo(
     () => ({
@@ -142,11 +152,22 @@ function ResourcesPage() {
             booking or updating a resource.
           </p>
         </div>
-        {isAdmin ? (
-          <button type="button" className="primary-btn" onClick={openCreateForm}>
-            Add Resource
-          </button>
-        ) : null}
+        <div className="resource-page-actions">
+          {isAdmin ? (
+            <Link to="/admin" className="resource-link ghost-btn">
+              Back to Admin Dashboard
+            </Link>
+          ) : (
+            <Link to="/home" className="resource-link ghost-btn">
+              Back to User Dashboard
+            </Link>
+          )}
+          {isAdmin ? (
+            <button type="button" className="primary-btn" onClick={openCreateForm}>
+              Add Resource
+            </button>
+          ) : null}
+        </div>
       </header>
 
       <section className="resource-overview" aria-label="resource summary">

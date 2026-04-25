@@ -1,5 +1,24 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8085').replace(/\/$/, '');
 const RESOURCE_ENDPOINT = '/api/v1/resources';
+const SESSION_STORAGE_KEY = 'smart-campus-session';
+
+function getCurrentUserRole() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  try {
+    const session = JSON.parse(window.localStorage.getItem(SESSION_STORAGE_KEY) || 'null');
+    return (session?.role || '').toUpperCase();
+  } catch {
+    return '';
+  }
+}
+
+function buildRoleHeader() {
+  const role = getCurrentUserRole();
+  return role ? { 'X-User-Role': role } : {};
+}
 
 function buildQuery(params = {}) {
   const query = new URLSearchParams();
@@ -48,7 +67,7 @@ export async function createResource(payload) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-User-Role': 'ADMIN',
+      ...buildRoleHeader(),
     },
     body: JSON.stringify(payload),
   });
@@ -62,7 +81,7 @@ export async function updateResource(id, payload) {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'X-User-Role': 'ADMIN',
+      ...buildRoleHeader(),
     },
     body: JSON.stringify(payload),
   });
@@ -74,9 +93,7 @@ export async function updateResource(id, payload) {
 export async function deleteResource(id) {
   const response = await fetch(`${API_BASE_URL}${RESOURCE_ENDPOINT}/${id}`, {
     method: 'DELETE',
-    headers: {
-      'X-User-Role': 'ADMIN',
-    },
+    headers: buildRoleHeader(),
   });
 
   if (!response.ok) {

@@ -541,6 +541,13 @@ body {
   line-height: 1.6;
 }
 
+.resource-page-actions {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .resource-overview {
   margin-top: 1rem;
   display: grid;
@@ -856,6 +863,8 @@ body {
   display: flex;
   gap: 0.6rem;
   flex-wrap: wrap;
+}
+
 .home-nav-links button,
 .home-nav-links a {
   display: inline-flex;
