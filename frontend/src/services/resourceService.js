@@ -91,6 +91,10 @@ export async function deleteResource(id) {
   }
 }
 
+export async function softDeleteResource(id) {
+  return deleteResource(id);
+}
+
 export async function getResourceAvailability(id) {
   const response = await fetch(`${API_BASE_URL}${RESOURCE_ENDPOINT}/${id}/availability`);
   const data = await parseResponse(response, 'Unable to fetch availability windows.');
