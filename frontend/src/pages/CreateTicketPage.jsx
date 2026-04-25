@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import ImageUploadPreview from '../components/ImageUploadPreview';
 import { createTicket } from '../services/ticketService';
+import { getResources } from '../services/resourceService';
 
 const defaultForm = {
   resourceId: '',
@@ -19,12 +20,45 @@ function CreateTicketPage() {
   const [files, setFiles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [resources, setResources] = useState([]);
+  const [resourcesLoading, setResourcesLoading] = useState(true);
+  const [resourcesError, setResourcesError] = useState('');
+  const [selectedResource, setSelectedResource] = useState(null);
+
+  // Load resources on component mount
+  useEffect(() => {
+    const loadResources = async () => {
+      setResourcesLoading(true);
+      setResourcesError('');
+      try {
+        const data = await getResources();
+        setResources(data || []);
+      } catch (err) {
+        setResourcesError(err.message || 'Failed to load resources');
+        setResources([]);
+      } finally {
+        setResourcesLoading(false);
+      }
+    };
+    loadResources();
+  }, []);
 
   const updateField = (field, value) => {
     setFormData((previous) => ({
       ...previous,
       [field]: value,
     }));
+  };
+
+  const handleResourceSelect = (resourceId) => {
+    const selected = resources.find((r) => r.id === resourceId);
+    setSelectedResource(selected || null);
+    updateField('resourceId', resourceId);
+    
+    // Auto-populate location from selected resource
+    if (selected && selected.location) {
+      updateField('location', selected.location);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -64,13 +98,25 @@ function CreateTicketPage() {
       </header>
 
       <form className="ticket-form" onSubmit={handleSubmit}>
-        <label htmlFor="resource-id">Resource ID (optional)</label>
-        <input
-          id="resource-id"
-          value={formData.resourceId}
-          onChange={(event) => updateField('resourceId', event.target.value)}
-          placeholder="e.g. 66124f0c9f6e4d3e5e0b1234"
-        />
+        <div className="form-field">
+          <label htmlFor="resource-select">Select Related Resource (Optional)</label>
+          <select
+            id="resource-select"
+            value={formData.resourceId}
+            onChange={(event) => handleResourceSelect(event.target.value)}
+            disabled={resourcesLoading}
+            className="resource-selector"
+          >
+            <option value="">-- Choose a resource --</option>
+            {resources.map((resource) => (
+              <option key={resource.id} value={resource.id}>
+                {resource.name} ({resource.type}) - {resource.location}
+              </option>
+            ))}
+          </select>
+          {resourcesError && <p className="field-error">{resourcesError}</p>}
+          {resourcesLoading && <p className="field-help">Loading resources...</p>}
+        </div>
 
         <label htmlFor="location">Location</label>
         <input
@@ -129,7 +175,7 @@ function CreateTicketPage() {
 
         {error ? <p className="field-error">{error}</p> : null}
 
-        <button type="submit" className="primary-btn" disabled={isSubmitting}>
+        <button type="submit" className="primary-btn" disabled={isSubmitting || resourcesLoading}>
           {isSubmitting ? 'Creating Ticket...' : 'Submit Ticket'}
         </button>
       </form>

@@ -968,6 +968,47 @@ body {
   box-shadow: 0 0 0 4px rgba(22, 148, 139, 0.16);
 }
 
+.form-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.form-field label {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1a3a4a;
+}
+
+.resource-selector {
+  width: 100%;
+  border: 1px solid #c7d5e0;
+  border-radius: 12px;
+  padding: 0.72rem 0.82rem;
+  font: inherit;
+  background: #eaf1f7;
+  color: #1a3a4a;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.resource-selector:hover:not(:disabled) {
+  border-color: #8fb1bd;
+  background: #f5f9fc;
+}
+
+.resource-selector:focus {
+  outline: none;
+  border-color: #16948b;
+  box-shadow: 0 0 0 4px rgba(22, 148, 139, 0.16);
+}
+
+.resource-selector:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #d8e5f0;
+}
+
 .ticket-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
