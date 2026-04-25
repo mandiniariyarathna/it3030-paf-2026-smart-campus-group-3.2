@@ -27,11 +27,16 @@ import com.smartcampus.ticket.model.TicketPriority;
 import com.smartcampus.ticket.model.TicketStatus;
 import com.smartcampus.ticket.service.TicketService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/tickets")
 @Validated
+@Tag(name = "Tickets", description = "Maintenance and incident ticketing APIs")
 public class TicketController {
 
     private final TicketService ticketService;
@@ -41,6 +46,8 @@ public class TicketController {
     }
 
     @PostMapping(consumes = { "multipart/form-data" })
+    @Operation(summary = "Create ticket", description = "Create a maintenance ticket with optional image attachments")
+    @ApiResponse(responseCode = "200", description = "Ticket created successfully")
     public ResponseEntity<Map<String, Object>> createTicket(
             @RequestHeader("X-User-Id") String userId,
             @Valid @RequestPart("ticket") TicketCreateRequest request,
@@ -51,11 +58,16 @@ public class TicketController {
     }
 
     @GetMapping
+        @Operation(summary = "List tickets", description = "List tickets based on role scope with optional filters")
+        @ApiResponse(responseCode = "200", description = "Tickets fetched successfully")
     public ResponseEntity<Map<String, Object>> getTickets(
             @RequestHeader(value = "X-User-Id", required = false) String userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @Parameter(description = "Filter by ticket status")
             @RequestParam(required = false) TicketStatus status,
+            @Parameter(description = "Filter by ticket priority")
             @RequestParam(required = false) TicketPriority priority,
+            @Parameter(description = "Filter by ticket category")
             @RequestParam(required = false) TicketCategory category) {
 
         List<TicketResponse> data = ticketService.getTickets(userId, userRole, status, priority, category);
@@ -63,6 +75,8 @@ public class TicketController {
     }
 
     @GetMapping("/{ticketId}")
+    @Operation(summary = "Get ticket by id", description = "Get detailed information for a single ticket")
+    @ApiResponse(responseCode = "200", description = "Ticket fetched successfully")
     public ResponseEntity<Map<String, Object>> getTicketById(
             @PathVariable String ticketId,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
@@ -73,6 +87,8 @@ public class TicketController {
     }
 
     @PutMapping("/{ticketId}/status")
+    @Operation(summary = "Update ticket status", description = "Update ticket status with transition validation")
+    @ApiResponse(responseCode = "200", description = "Ticket status updated successfully")
     public ResponseEntity<Map<String, Object>> updateStatus(
             @PathVariable String ticketId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
@@ -83,6 +99,8 @@ public class TicketController {
     }
 
     @PutMapping("/{ticketId}/assign")
+    @Operation(summary = "Assign technician", description = "Assign a technician to a ticket (admin only)")
+    @ApiResponse(responseCode = "200", description = "Ticket assigned successfully")
     public ResponseEntity<Map<String, Object>> assignTechnician(
             @PathVariable String ticketId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
@@ -93,6 +111,8 @@ public class TicketController {
     }
 
     @DeleteMapping("/{ticketId}")
+    @Operation(summary = "Close ticket", description = "Soft delete endpoint that closes a ticket (admin only)")
+    @ApiResponse(responseCode = "200", description = "Ticket closed successfully")
     public ResponseEntity<Map<String, Object>> closeTicket(
             @PathVariable String ticketId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {

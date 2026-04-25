@@ -19,11 +19,15 @@ import com.smartcampus.ticket.dto.TicketCommentUpdateRequest;
 import com.smartcampus.ticket.dto.TicketResponse;
 import com.smartcampus.ticket.service.TicketService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/tickets/{ticketId}/comments")
 @Validated
+@Tag(name = "Ticket Comments", description = "Embedded comment operations for maintenance tickets")
 public class TicketCommentController {
 
     private final TicketService ticketService;
@@ -33,6 +37,8 @@ public class TicketCommentController {
     }
 
     @PostMapping
+    @Operation(summary = "Add comment", description = "Add a comment to the ticket comment array")
+    @ApiResponse(responseCode = "200", description = "Comment added successfully")
     public ResponseEntity<Map<String, Object>> addComment(
             @PathVariable String ticketId,
             @RequestHeader("X-User-Id") String userId,
@@ -44,6 +50,8 @@ public class TicketCommentController {
     }
 
     @PutMapping("/{commentId}")
+    @Operation(summary = "Edit comment", description = "Edit an existing comment (owner or admin)")
+    @ApiResponse(responseCode = "200", description = "Comment updated successfully")
     public ResponseEntity<Map<String, Object>> editComment(
             @PathVariable String ticketId,
             @PathVariable String commentId,
@@ -56,6 +64,8 @@ public class TicketCommentController {
     }
 
     @DeleteMapping("/{commentId}")
+    @Operation(summary = "Delete comment", description = "Delete a comment (owner or admin)")
+    @ApiResponse(responseCode = "200", description = "Comment deleted successfully")
     public ResponseEntity<Map<String, Object>> deleteComment(
             @PathVariable String ticketId,
             @PathVariable String commentId,
