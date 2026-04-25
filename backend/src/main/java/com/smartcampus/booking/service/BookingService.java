@@ -1,6 +1,8 @@
 package com.smartcampus.booking.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,8 @@ public class BookingService {
     }
 
     public BookingDTO createBooking(BookingRequestDTO request) {
+        validateDateAndTime(request.getDate(), request.getStartTime(), request.getEndTime());
+
         List<Booking> conflicts = bookingRepository.findConflictingBookings(
                 request.getResourceId(),
                 request.getDate(),
@@ -159,6 +163,33 @@ public class BookingService {
                 .createdAt(booking.getCreatedAt())
                 .updatedAt(booking.getUpdatedAt())
                 .build();
+    }
+
+    private void validateDateAndTime(String date, String startTime, String endTime) {
+        LocalDate bookingDate;
+        LocalTime bookingStart;
+        LocalTime bookingEnd;
+
+        try {
+            bookingDate = LocalDate.parse(date);
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("Date must be a valid calendar date in YYYY-MM-DD format");
+        }
+
+        if (bookingDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Booking date cannot be in the past");
+        }
+
+        try {
+            bookingStart = LocalTime.parse(startTime);
+            bookingEnd = LocalTime.parse(endTime);
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("Start and end times must be valid values in HH:mm format");
+        }
+
+        if (!bookingStart.isBefore(bookingEnd)) {
+            throw new IllegalArgumentException("Start time must be earlier than end time");
+        }
     }
 
     private boolean isAdmin(String userRole) {
