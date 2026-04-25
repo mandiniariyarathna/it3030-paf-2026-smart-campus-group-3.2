@@ -118,66 +118,94 @@ function CreateTicketPage() {
           {resourcesLoading && <p className="field-help">Loading resources...</p>}
         </div>
 
-        <label htmlFor="location">Location</label>
-        <input
-          id="location"
-          value={formData.location}
-          onChange={(event) => updateField('location', event.target.value)}
-          required
-          maxLength={200}
-        />
+        <div className="form-field">
+          <label htmlFor="location">Location *</label>
+          <input
+            id="location"
+            type="text"
+            value={formData.location}
+            onChange={(event) => updateField('location', event.target.value)}
+            placeholder="Enter ticket location"
+            required
+            maxLength={200}
+          />
+        </div>
 
-        <label htmlFor="category">Category</label>
-        <select
-          id="category"
-          value={formData.category}
-          onChange={(event) => updateField('category', event.target.value)}
-        >
-          <option value="ELECTRICAL">Electrical</option>
-          <option value="PLUMBING">Plumbing</option>
-          <option value="IT_EQUIPMENT">IT Equipment</option>
-          <option value="HVAC">HVAC</option>
-          <option value="STRUCTURAL">Structural</option>
-          <option value="OTHER">Other</option>
-        </select>
+        <div className="form-field">
+          <label htmlFor="category">Category *</label>
+          <select
+            id="category"
+            value={formData.category}
+            onChange={(event) => updateField('category', event.target.value)}
+            required
+          >
+            <option value="">-- Select category --</option>
+            <option value="ELECTRICAL">Electrical</option>
+            <option value="PLUMBING">Plumbing</option>
+            <option value="IT_EQUIPMENT">IT Equipment</option>
+            <option value="HVAC">HVAC</option>
+            <option value="STRUCTURAL">Structural</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
 
-        <label htmlFor="priority">Priority</label>
-        <select
-          id="priority"
-          value={formData.priority}
-          onChange={(event) => updateField('priority', event.target.value)}
-        >
-          <option value="LOW">Low</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HIGH">High</option>
-          <option value="CRITICAL">Critical</option>
-        </select>
+        <div className="form-field">
+          <label htmlFor="priority">Priority *</label>
+          <select
+            id="priority"
+            value={formData.priority}
+            onChange={(event) => updateField('priority', event.target.value)}
+            required
+          >
+            <option value="">-- Select priority --</option>
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option>
+            <option value="CRITICAL">Critical</option>
+          </select>
+        </div>
 
-        <label htmlFor="description">Description</label>
-        <textarea
-          id="description"
-          value={formData.description}
-          onChange={(event) => updateField('description', event.target.value)}
-          required
-          maxLength={2000}
-        />
+        <div className="form-field">
+          <label htmlFor="description">Description *</label>
+          <textarea
+            id="description"
+            value={formData.description}
+            onChange={(event) => updateField('description', event.target.value)}
+            placeholder="Describe the issue in detail..."
+            required
+            maxLength={2000}
+            rows={5}
+          />
+        </div>
 
-        <label htmlFor="contact-details">Contact Details</label>
-        <input
-          id="contact-details"
-          value={formData.contactDetails}
-          onChange={(event) => updateField('contactDetails', event.target.value)}
-          required
-          maxLength={255}
-        />
+        <div className="form-field">
+          <label htmlFor="contact-details">Contact Details *</label>
+          <input
+            id="contact-details"
+            type="text"
+            value={formData.contactDetails}
+            onChange={(event) => updateField('contactDetails', event.target.value)}
+            placeholder="Your email or phone number"
+            required
+            maxLength={255}
+          />
+        </div>
 
-        <ImageUploadPreview files={files} onChange={setFiles} />
+        <div className="form-field">
+          <label>Attach Supporting Files (Max 3 images, 5MB each)</label>
+          <ImageUploadPreview files={files} onChange={setFiles} />
+        </div>
 
-        {error ? <p className="field-error">{error}</p> : null}
+        {error && <p className="field-error">{error}</p>}
 
-        <button type="submit" className="primary-btn" disabled={isSubmitting || resourcesLoading}>
-          {isSubmitting ? 'Creating Ticket...' : 'Submit Ticket'}
-        </button>
+        <div className="form-actions">
+          <button type="submit" className="primary-btn" disabled={isSubmitting || resourcesLoading}>
+            {isSubmitting ? 'Creating Ticket...' : 'Submit Ticket'}
+          </button>
+          <Link to="/tickets/my" className="ghost-btn">
+            Cancel
+          </Link>
+        </div>
       </form>
     </main>
   );

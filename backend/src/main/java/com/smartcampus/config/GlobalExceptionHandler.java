@@ -63,4 +63,13 @@ public class GlobalExceptionHandler {
         response.put("message", exception.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGenericException(Exception exception) {
+        exception.printStackTrace();
+        Map<String, String> response = new HashMap<>();
+        response.put("message", exception.getMessage() != null ? exception.getMessage() : "An unexpected error occurred");
+        response.put("error", exception.getClass().getSimpleName());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
 }

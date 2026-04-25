@@ -865,6 +865,19 @@ body {
   flex-wrap: wrap;
 }
 
+.form-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.form-actions button,
+.form-actions a {
+  min-width: 140px;
+}
+
 .home-nav-links button,
 .home-nav-links a {
   display: inline-flex;
