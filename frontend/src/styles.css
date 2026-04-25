@@ -178,8 +178,27 @@ body {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
 }
 
+.auth-form select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--input-bg);
+  padding: 0.92rem 1rem;
+  font: inherit;
+  color: #132238;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
+  appearance: none;
+}
+
 .auth-form input::placeholder {
   color: #7d8ea5;
+}
+
+.auth-form select:focus {
+  border-color: var(--teal-500);
+  box-shadow: 0 0 0 4px rgba(26, 155, 146, 0.17);
+  transform: translateY(-1px);
 }
 
 .auth-form input:focus {
@@ -188,9 +207,21 @@ body {
   transform: translateY(-1px);
 }
 
+.auth-form select[aria-invalid='true'] {
+  border-color: #c4444b;
+  box-shadow: 0 0 0 4px rgba(196, 68, 75, 0.14);
+}
+
 .auth-form input[aria-invalid='true'] {
   border-color: #c4444b;
   box-shadow: 0 0 0 4px rgba(196, 68, 75, 0.14);
+}
+
+.field-help {
+  margin: -0.15rem 0 0.2rem;
+  color: #66788f;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .field-error {
@@ -248,6 +279,10 @@ body {
   font-size: 1rem;
 }
 
+.helper-text-secondary {
+  margin-top: 0.85rem;
+}
+
 .helper-link {
   color: #117978;
   text-decoration: none;
@@ -274,6 +309,57 @@ body {
 
 .google-auth-btn {
   min-height: 44px;
+}
+
+.home-role-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.75rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(18, 124, 120, 0.12);
+  color: #0f6e74;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.home-role-pill-admin {
+  background: rgba(160, 84, 35, 0.14);
+  color: #9b4c1f;
+}
+
+.home-page-user .home-hero-copy {
+  background: linear-gradient(165deg, #f8fbfd 10%, #edf3f8 95%);
+}
+
+.admin-page .home-hero-copy {
+  background: linear-gradient(165deg, #fff7ef 8%, #f1ebe2 95%);
+}
+
+.admin-hero .home-status-card {
+  background: linear-gradient(180deg, #7d3b19, #5f2f17);
+}
+
+.admin-grid .home-tile {
+  background: rgba(255, 247, 239, 0.95);
+}
+
+.home-link-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: #0f6e74;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.home-link-button:hover {
+  text-decoration: underline;
 }
 
 .home-page {
@@ -434,6 +520,12 @@ body {
 
 .home-nav-links a:hover {
   text-decoration: underline;
+}
+
+.home-nav-links button,
+.home-nav-links a {
+  display: inline-flex;
+  align-items: center;
 }
 
 @media (max-width: 960px) {
