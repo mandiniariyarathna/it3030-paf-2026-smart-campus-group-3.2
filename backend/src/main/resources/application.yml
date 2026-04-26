@@ -12,4 +12,4 @@ google:
     client-id: ${GOOGLE_AUTH_CLIENT_ID:384649476958-c6b17p693e4kt4spnovf3qnm8danqlt0.apps.googleusercontent.com}
 
 server:
-  port: ${PORT:8085}
+  port: ${PORT:8080}
