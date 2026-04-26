@@ -103,15 +103,29 @@ createCollectionIfMissing("tickets", {
       bsonType: "object",
       required: ["reporterId", "location", "category", "description", "priority", "status", "contactDetails", "createdAt", "updatedAt"],
       properties: {
-        reporterId: { bsonType: "objectId" },
-        resourceId: { bsonType: ["objectId", "null"] },
+        reporterId: { bsonType: ["string", "objectId"] },
+        resourceId: { bsonType: ["string", "objectId", "null"] },
         location: { bsonType: "string", maxLength: 200 },
-        category: { enum: ["ELECTRICAL", "PLUMBING", "IT_EQUIPMENT", "HVAC", "STRUCTURAL", "OTHER"] },
+        category: {
+          enum: [
+            "MAINTENANCE",
+            "IT_TECHNICAL",
+            "FACILITY_RESOURCE_BASED",
+            "SAFETY_SECURITY",
+            "GENERAL",
+            "ELECTRICAL",
+            "PLUMBING",
+            "IT_EQUIPMENT",
+            "HVAC",
+            "STRUCTURAL",
+            "OTHER"
+          ]
+        },
         description: { bsonType: "string", maxLength: 2000 },
         priority: { enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
         status: { enum: ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED", "REJECTED"] },
         contactDetails: { bsonType: "string", maxLength: 255 },
-        assignedTechnicianId: { bsonType: ["objectId", "null"] },
+        assignedTechnicianId: { bsonType: ["string", "objectId", "null"] },
         assignedAt: { bsonType: ["date", "null"] },
         resolutionNote: { bsonType: ["string", "null"], maxLength: 2000 },
         rejectionReason: { bsonType: ["string", "null"], maxLength: 500 },
@@ -139,7 +153,7 @@ createCollectionIfMissing("tickets", {
             required: ["commentId", "authorId", "content", "isEdited", "createdAt", "updatedAt"],
             properties: {
               commentId: { bsonType: "string" },
-              authorId: { bsonType: "objectId" },
+              authorId: { bsonType: ["string", "objectId"] },
               content: { bsonType: "string", maxLength: 1000 },
               isEdited: { bsonType: "bool" },
               createdAt: { bsonType: "date" },
