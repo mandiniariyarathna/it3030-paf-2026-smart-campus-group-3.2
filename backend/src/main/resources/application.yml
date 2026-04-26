@@ -5,7 +5,10 @@ spring:
     import: optional:file:.env[.properties]
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://dbUser:mandi2002@ac-uzjg786-shard-00-00.hevkrki.mongodb.net:27017,ac-uzjg786-shard-00-01.hevkrki.mongodb.net:27017,ac-uzjg786-shard-00-02.hevkrki.mongodb.net:27017/smartcampus_db?ssl=true&replicaSet=atlas-moih8k-shard-0&authSource=admin&appName=Cluster0b}
+      uri: ${MONGODB_URI:mongodb://dbUser:mandi2002@ac-uzjg786-shard-00-00.hevkrki.mongodb.net:27017,ac-uzjg786-shard-00-01.hevkrki.mongodb.net:27017,ac-uzjg786-shard-00-02.hevkrki.mongodb.net:27017/smartcampus_db?ssl=true&replicaSet=atlas-moih8k-shard-0&authSource=admin&appName=Cluster0}
+      auto-index-creation: true
+  mongo:
+    auto-index-creation: true
 
 google:
   auth:
@@ -13,3 +16,10 @@ google:
 
 server:
   port: ${PORT:8085}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  port: ${PORT:8080}

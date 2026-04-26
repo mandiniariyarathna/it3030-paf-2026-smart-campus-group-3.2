@@ -1,8 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { authenticateWithGoogle } from './services/authService';
+import { loginTechnician } from './services/technicianService';
 import ResourcesPage from './pages/ResourcesPage';
 import ResourceDetailPage from './pages/ResourceDetailPage';
+import CreateTicketPage from './pages/CreateTicketPage';
+import EditTicketPage from './pages/EditTicketPage';
+import MyTicketsPage from './pages/MyTicketsPage';
+import AdminTicketsPage from './pages/AdminTicketsPage';
+import TicketDetailPage from './pages/TicketDetailPage';
+import TechniciansPage from './pages/TechniciansPage';
+import TechnicianDashboardPage from './pages/TechnicianDashboardPage';
+import BookingRequestPage from './pages/BookingRequestPage';
+import RepeatBookingPage from './pages/RepeatBookingPage';
+import MyBookingsPage from './pages/MyBookingsPage';
+import AdminBookingsPage from './pages/AdminBookingsPage';
 
 const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
@@ -89,6 +101,7 @@ function createSessionFromAccount(account) {
     displayName: account.displayName,
     email: account.email,
     username: account.username,
+    actorId: account.email || account.username,
   };
 }
 
@@ -324,7 +337,7 @@ function LoginPage() {
     }));
   };
 
-  const handleLoginSubmit = (event) => {
+  const handleLoginSubmit = async (event) => {
     event.preventDefault();
 
     const nextErrors = validateLoginForm(loginData);
@@ -348,6 +361,7 @@ function LoginPage() {
         displayName: 'Administrator',
         username: ADMIN_USERNAME,
         email: `${ADMIN_USERNAME}@smartcampus.local`,
+        actorId: `${ADMIN_USERNAME}@smartcampus.local`,
       };
 
       saveSession(adminSession);
@@ -362,24 +376,44 @@ function LoginPage() {
 
     const account = findAccountByCredentials(loginData.email, loginData.password);
 
-    if (!account) {
+    if (account) {
+      if (account.role === ROLE_ADMIN) {
+        setSubmitError('Admin accounts must sign in from the admin access page.');
+        return;
+      }
+
+      const session = createSessionFromAccount(account);
+      saveSession(session);
+      navigate('/home', {
+        state: {
+          displayName: account.displayName,
+          role: account.role,
+        },
+      });
+      return;
+    }
+
+    try {
+      const technician = await loginTechnician(loginData.email.trim(), loginData.password);
+      const technicianSession = {
+        role: ROLE_TECHNICIAN,
+        displayName: technician.name,
+        email: technician.email,
+        technicianId: technician.id,
+        actorId: technician.id,
+      };
+
+      saveSession(technicianSession);
+      navigate('/technician', {
+        state: {
+          displayName: technician.name,
+          role: ROLE_TECHNICIAN,
+          technicianId: technician.id,
+        },
+      });
+    } catch (technicianError) {
       setSubmitError('No matching account was found.');
-      return;
     }
-
-    if (account.role === ROLE_ADMIN) {
-      setSubmitError('Admin accounts must sign in from the admin access page.');
-      return;
-    }
-
-    const session = createSessionFromAccount(account);
-    saveSession(session);
-    navigate('/home', {
-      state: {
-        displayName: account.displayName,
-        role: account.role,
-      },
-    });
   };
 
   const handleGoogleAuth = async (credential) => {
@@ -396,6 +430,7 @@ function LoginPage() {
         displayName,
         email: response.email || matchedAccount?.email || '',
         username: matchedAccount?.username || '',
+        actorId: response.email || matchedAccount?.email || matchedAccount?.username || '',
       });
 
       navigate('/home', {
@@ -930,6 +965,7 @@ function AdminLoginPage() {
       displayName: 'Administrator',
       username: ADMIN_USERNAME,
       email: `${ADMIN_USERNAME}@smartcampus.local`,
+      actorId: `${ADMIN_USERNAME}@smartcampus.local`,
     };
 
     saveSession(session);
@@ -1039,11 +1075,13 @@ function HomePage() {
             experience.
           </p>
           <div className="home-actions">
-            <button type="button" className="home-btn home-btn-primary">
-              Open Dashboard
-            </button>
             <Link to="/resources" className="home-btn home-btn-outline link-btn">
               Browse Resources
+            </Link>
+            <Link to="/tickets/my" className="home-btn home-btn-outline link-btn">
+              My Tickets
+            <Link to="/my-bookings" className="home-btn home-btn-outline link-btn">
+              My Bookings
             </Link>
           </div>
         </div>
@@ -1136,9 +1174,11 @@ function AdminDashboardPage() {
             <Link to="/resources" className="home-btn home-btn-primary link-btn">
               Manage Resources
             </Link>
-            <button type="button" className="home-btn home-btn-outline">
-              Review Audit Log
-            </button>
+            <Link to="/tickets/admin" className="home-btn home-btn-outline link-btn">
+              Manage Tickets
+            <Link to="/admin/bookings" className="home-btn home-btn-outline link-btn">
+              Review Booking Requests
+            </Link>
           </div>
         </div>
 
@@ -1198,9 +1238,20 @@ function App() {
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/admin-login" element={<AdminLoginPage />} />
       <Route path="/home" element={<HomePage />} />
+      <Route path="/bookings/new" element={<BookingRequestPage />} />
+      <Route path="/bookings/repeat" element={<RepeatBookingPage />} />
+      <Route path="/my-bookings" element={<MyBookingsPage />} />
+      <Route path="/admin/bookings" element={<AdminBookingsPage />} />
       <Route path="/resources" element={<ResourcesPage />} />
       <Route path="/resources/:id" element={<ResourceDetailPage />} />
       <Route path="/admin" element={<AdminDashboardPage />} />
+      <Route path="/admin/technicians" element={<TechniciansPage />} />
+      <Route path="/technician" element={<TechnicianDashboardPage />} />
+      <Route path="/tickets/create" element={<CreateTicketPage />} />
+          <Route path="/tickets/:ticketId/edit" element={<EditTicketPage />} />
+      <Route path="/tickets/my" element={<MyTicketsPage />} />
+      <Route path="/tickets/admin" element={<AdminTicketsPage />} />
+      <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
     </Routes>
   );
 }
