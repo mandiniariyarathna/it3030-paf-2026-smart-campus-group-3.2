@@ -1080,6 +1080,7 @@ function HomePage() {
             </Link>
             <Link to="/tickets/my" className="home-btn home-btn-outline link-btn">
               My Tickets
+            </Link>
             <Link to="/my-bookings" className="home-btn home-btn-outline link-btn">
               My Bookings
             </Link>
@@ -1176,6 +1177,7 @@ function AdminDashboardPage() {
             </Link>
             <Link to="/tickets/admin" className="home-btn home-btn-outline link-btn">
               Manage Tickets
+            </Link>
             <Link to="/admin/bookings" className="home-btn home-btn-outline link-btn">
               Review Booking Requests
             </Link>
