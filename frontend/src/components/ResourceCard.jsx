@@ -41,6 +41,11 @@ function ResourceCard({ resource, isAdmin, onEdit, onDelete }) {
         <Link to={`/resources/${resource.id}`} className="resource-link">
           View Details
         </Link>
+        {!isAdmin ? (
+          <Link to={`/bookings/new?resourceId=${resource.id}`} className="resource-link book-now-btn">
+            Book Now
+          </Link>
+        ) : null}
         {isAdmin ? (
           <button type="button" className="resource-link ghost-btn" onClick={() => onEdit(resource)}>
             Edit

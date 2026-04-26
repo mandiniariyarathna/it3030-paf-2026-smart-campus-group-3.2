@@ -11,6 +11,10 @@ import AdminTicketsPage from './pages/AdminTicketsPage';
 import TicketDetailPage from './pages/TicketDetailPage';
 import TechniciansPage from './pages/TechniciansPage';
 import TechnicianDashboardPage from './pages/TechnicianDashboardPage';
+import BookingRequestPage from './pages/BookingRequestPage';
+import RepeatBookingPage from './pages/RepeatBookingPage';
+import MyBookingsPage from './pages/MyBookingsPage';
+import AdminBookingsPage from './pages/AdminBookingsPage';
 
 const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
@@ -1071,14 +1075,13 @@ function HomePage() {
             experience.
           </p>
           <div className="home-actions">
-            <button type="button" className="home-btn home-btn-primary">
-              Open Dashboard
-            </button>
             <Link to="/resources" className="home-btn home-btn-outline link-btn">
               Browse Resources
             </Link>
             <Link to="/tickets/my" className="home-btn home-btn-outline link-btn">
               My Tickets
+            <Link to="/my-bookings" className="home-btn home-btn-outline link-btn">
+              My Bookings
             </Link>
           </div>
         </div>
@@ -1173,6 +1176,8 @@ function AdminDashboardPage() {
             </Link>
             <Link to="/tickets/admin" className="home-btn home-btn-outline link-btn">
               Manage Tickets
+            <Link to="/admin/bookings" className="home-btn home-btn-outline link-btn">
+              Review Booking Requests
             </Link>
           </div>
         </div>
@@ -1233,6 +1238,10 @@ function App() {
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/admin-login" element={<AdminLoginPage />} />
       <Route path="/home" element={<HomePage />} />
+      <Route path="/bookings/new" element={<BookingRequestPage />} />
+      <Route path="/bookings/repeat" element={<RepeatBookingPage />} />
+      <Route path="/my-bookings" element={<MyBookingsPage />} />
+      <Route path="/admin/bookings" element={<AdminBookingsPage />} />
       <Route path="/resources" element={<ResourcesPage />} />
       <Route path="/resources/:id" element={<ResourceDetailPage />} />
       <Route path="/admin" element={<AdminDashboardPage />} />
