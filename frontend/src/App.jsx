@@ -4,6 +4,7 @@ import { authenticateWithGoogle } from './services/authService';
 import ResourcesPage from './pages/ResourcesPage';
 import ResourceDetailPage from './pages/ResourceDetailPage';
 import BookingRequestPage from './pages/BookingRequestPage';
+import RepeatBookingPage from './pages/RepeatBookingPage';
 import MyBookingsPage from './pages/MyBookingsPage';
 import AdminBookingsPage from './pages/AdminBookingsPage';
 
@@ -1202,6 +1203,7 @@ function App() {
       <Route path="/admin-login" element={<AdminLoginPage />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/bookings/new" element={<BookingRequestPage />} />
+      <Route path="/bookings/repeat" element={<RepeatBookingPage />} />
       <Route path="/my-bookings" element={<MyBookingsPage />} />
       <Route path="/admin/bookings" element={<AdminBookingsPage />} />
       <Route path="/resources" element={<ResourcesPage />} />

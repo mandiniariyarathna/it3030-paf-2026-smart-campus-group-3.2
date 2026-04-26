@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-function BookingDetailModal({ booking, isAdmin, onClose, onApprove, onReject, onCancel, onEdit }) {
+function BookingDetailModal({ booking, isAdmin, onClose, onApprove, onReject, onCancel, onEdit, onRepeat }) {
   const [reason, setReason] = useState('');
 
   if (!booking) {
@@ -47,6 +47,12 @@ function BookingDetailModal({ booking, isAdmin, onClose, onApprove, onReject, on
           {onEdit && booking.status === 'PENDING' ? (
             <button type="button" className="booking-btn booking-btn-secondary" onClick={() => onEdit(booking)}>
               Edit Booking
+            </button>
+          ) : null}
+
+          {onRepeat && booking.status !== 'PENDING' ? (
+            <button type="button" className="booking-btn booking-btn-repeat" onClick={() => onRepeat(booking)}>
+              Repeat Booking
             </button>
           ) : null}
 

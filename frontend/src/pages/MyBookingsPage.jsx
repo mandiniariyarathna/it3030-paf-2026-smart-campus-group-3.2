@@ -64,6 +64,11 @@ function MyBookingsPage() {
     navigate(`/bookings/new?editBookingId=${booking.id}`);
   };
 
+  const handleRepeat = (booking) => {
+    setSelectedBooking(null);
+    navigate(`/bookings/repeat?bookingId=${booking.id}`);
+  };
+
   return (
     <main className="booking-page">
       <header className="booking-head">
@@ -96,6 +101,7 @@ function MyBookingsPage() {
             isAdmin={false}
             onView={setSelectedBooking}
             onEdit={handleEdit}
+            onRepeat={handleRepeat}
             onCancel={handleCancel}
           />
         ))}
@@ -106,6 +112,7 @@ function MyBookingsPage() {
         isAdmin={false}
         onClose={() => setSelectedBooking(null)}
         onEdit={handleEdit}
+        onRepeat={handleRepeat}
         onCancel={handleCancel}
       />
     </main>

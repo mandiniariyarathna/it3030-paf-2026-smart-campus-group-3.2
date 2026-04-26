@@ -584,6 +584,77 @@ body {
   color: #245286;
 }
 
+.booking-btn-repeat {
+  background: #e8f7ed;
+  color: #1e6e41;
+}
+
+.repeat-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.repeat-source-card {
+  border: 1px solid #d9e7ea;
+  border-radius: 14px;
+  background: #f7fbfc;
+  padding: 0.9rem;
+}
+
+.repeat-source-card h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: #143953;
+}
+
+.repeat-source-card p {
+  margin: 0.25rem 0;
+  color: #284964;
+}
+
+.repeat-grid {
+  align-items: end;
+}
+
+.repeat-label {
+  margin: 0 0 0.45rem;
+  font-weight: 700;
+  color: #26465e;
+}
+
+.repeat-weekdays {
+  margin-top: 0.2rem;
+}
+
+.repeat-weekdays-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.repeat-day-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid #cfe0e7;
+  border-radius: 10px;
+  background: #f7fbfd;
+}
+
+.repeat-preview {
+  border: 1px dashed #bed5dd;
+  border-radius: 12px;
+  background: #f6fbfc;
+  padding: 0.75rem;
+}
+
+.repeat-preview ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #24455e;
+}
+
 .booking-reason {
   margin: 0;
   font-size: 0.9rem;
