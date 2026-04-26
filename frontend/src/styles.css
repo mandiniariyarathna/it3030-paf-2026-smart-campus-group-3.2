@@ -335,6 +335,41 @@ body {
   gap: 0.55rem;
 }
 
+.booking-report-btn {
+  margin-top: 0;
+}
+
+.booking-report-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.booking-report-card {
+  border: 1px solid #dce9ea;
+  border-radius: 16px;
+  background: #ffffffcc;
+  box-shadow: 0 12px 30px rgba(20, 72, 88, 0.08);
+  padding: 0.9rem 1rem;
+}
+
+.booking-report-card span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #557188;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.booking-report-card strong {
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  color: #163a53;
+}
+
 .booking-nav-link,
 .booking-nav-link-primary {
   text-decoration: none;
@@ -723,6 +758,10 @@ body {
     flex-direction: column;
   }
 
+  .booking-report-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .booking-form-grid,
   .booking-modal-grid {
     grid-template-columns: 1fr;
@@ -752,6 +791,10 @@ body {
 
   .booking-head-actions {
     width: 100%;
+  }
+
+  .booking-report-summary {
+    grid-template-columns: 1fr;
   }
 
   .booking-nav-link,
