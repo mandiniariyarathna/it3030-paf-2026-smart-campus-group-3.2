@@ -61,7 +61,11 @@ export function getCurrentActor() {
   const override = readActorOverride();
 
   const role = (override?.role || session?.role || '').toUpperCase();
-  const userId = override?.userId || createFallbackUserId(session);
+  let userId = override?.userId || createFallbackUserId(session);
+
+  if (!override?.userId && role === 'TECHNICIAN' && session?.technicianId) {
+    userId = session.technicianId;
+  }
 
   return {
     role,

@@ -12,6 +12,29 @@ const defaultFilters = {
   category: '',
 };
 
+const CATEGORY_SPECIALIZATION_MAP = {
+  ELECTRICAL: ['Electrical'],
+  PLUMBING: ['Maintenance'],
+  IT_EQUIPMENT: ['Network', 'Hardware', 'Software'],
+  HVAC: ['Maintenance'],
+  STRUCTURAL: ['Maintenance'],
+  OTHER: ['Maintenance', 'Electrical', 'Network', 'Hardware', 'Software'],
+};
+
+function getTechnicianOptionsForCategory(category, technicians, assignedTechnicianId) {
+  const allowedSpecializations = CATEGORY_SPECIALIZATION_MAP[category] || [];
+  const normalizedAllowedSpecializations = allowedSpecializations.map((specialization) => specialization.toLowerCase());
+
+  return technicians.filter((technician) => {
+    if (technician.id === assignedTechnicianId) {
+      return true;
+    }
+
+    const specialization = (technician.specialization || '').trim().toLowerCase();
+    return normalizedAllowedSpecializations.includes(specialization);
+  });
+}
+
 function AdminTicketsPage() {
   const [filters, setFilters] = useState(defaultFilters);
   const [tickets, setTickets] = useState([]);
@@ -20,6 +43,10 @@ function AdminTicketsPage() {
   const [error, setError] = useState('');
 
   const queryFilters = useMemo(() => ({ ...filters }), [filters]);
+  const technicianNameById = useMemo(
+    () => new Map(technicians.map((technician) => [technician.id, technician.name])),
+    [technicians]
+  );
 
   const loadTechnicians = async () => {
     try {
@@ -139,10 +166,11 @@ function AdminTicketsPage() {
               <thead>
                 <tr>
                   <th>Location</th>
+                  <th>Category</th>
                   <th>Reporter</th>
                   <th>Status</th>
                   <th>Priority</th>
-                  <th>Assigned</th>
+                  <th>Assigned Name</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -154,6 +182,7 @@ function AdminTicketsPage() {
                         {ticket.location}
                       </Link>
                     </td>
+                    <td>{ticket.category}</td>
                     <td>{ticket.reporterId}</td>
                     <td>
                       <TicketStatusBadge status={ticket.status} />
@@ -161,7 +190,7 @@ function AdminTicketsPage() {
                     <td>
                       <PriorityBadge priority={ticket.priority} />
                     </td>
-                    <td>{ticket.assignedTechnicianId || 'Unassigned'}</td>
+                    <td>{technicianNameById.get(ticket.assignedTechnicianId) || 'Unassigned'}</td>
                     <td>
                       <div className="inline-actions">
                         <select
@@ -171,7 +200,7 @@ function AdminTicketsPage() {
                           className="ghost-btn"
                         >
                           <option value="">Select Technician</option>
-                          {technicians.map((tech) => (
+                          {getTechnicianOptionsForCategory(ticket.category, technicians, ticket.assignedTechnicianId).map((tech) => (
                             <option key={tech.id} value={tech.id}>
                               {tech.name} ({tech.specialization || 'General'})
                             </option>

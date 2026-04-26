@@ -107,7 +107,7 @@ function CommentSection({ ticketId, comments, onCommentsUpdated }) {
       <div className="comment-list">
         {comments.length === 0 ? <p className="comment-empty">No comments yet.</p> : null}
         {comments.map((comment) => {
-          const canModify = isAdmin || actor.userId === comment.authorId;
+          const canModify = !isAdmin && actor.userId === comment.authorId;
           const isEditing = editingCommentId === comment.commentId;
 
           return (

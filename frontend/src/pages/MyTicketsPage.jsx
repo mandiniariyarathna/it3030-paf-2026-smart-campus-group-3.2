@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 
 import PriorityBadge from '../components/PriorityBadge';
 import TicketStatusBadge from '../components/TicketStatusBadge';
-import { getTickets } from '../services/ticketService';
+import { getCurrentActor, getTickets } from '../services/ticketService';
 
 function MyTicketsPage() {
   const [tickets, setTickets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const actor = getCurrentActor();
+  const isTechnician = actor.role === 'TECHNICIAN';
 
   useEffect(() => {
     const loadTickets = async () => {
@@ -43,11 +45,13 @@ function MyTicketsPage() {
           <h1>My Tickets</h1>
           <p>Track your submitted incidents and view updates from technicians.</p>
         </div>
-        <div className="ticket-head-actions">
-          <Link to="/tickets/create" className="primary-btn ticket-link-btn">
-            Create Ticket
-          </Link>
-        </div>
+        {!isTechnician ? (
+          <div className="ticket-head-actions">
+            <Link to="/tickets/create" className="primary-btn ticket-link-btn">
+              Create Ticket
+            </Link>
+          </div>
+        ) : null}
       </header>
 
       <section className="ticket-stats">
@@ -70,24 +74,26 @@ function MyTicketsPage() {
         {!isLoading && error ? <p className="field-error">{error}</p> : null}
         {!isLoading && !error && tickets.length === 0 ? <p>No tickets created yet.</p> : null}
 
-        <div className="ticket-list-grid">
+        <ul className="ticket-list" aria-label="My tickets">
           {tickets.map((ticket) => (
-            <article key={ticket.id} className="ticket-list-card">
-              <header>
-                <h3>{ticket.location}</h3>
-                <div className="ticket-badge-row">
-                  <TicketStatusBadge status={ticket.status} />
-                  <PriorityBadge priority={ticket.priority} />
+            <li key={ticket.id} className="ticket-list-item">
+              <Link to={`/tickets/${ticket.id}`} className="ticket-list-link">
+                <div className="ticket-list-main">
+                  <h3>{ticket.location}</h3>
+                  <p>{ticket.description}</p>
+                  <small>Category: {ticket.category}</small>
                 </div>
-              </header>
-              <p>{ticket.description}</p>
-              <small>Category: {ticket.category}</small>
-              <Link to={`/tickets/${ticket.id}`} className="ticket-link-inline">
-                View Details
+
+                <div className="ticket-list-meta">
+                  <div className="ticket-badge-row">
+                    <TicketStatusBadge status={ticket.status} />
+                    <PriorityBadge priority={ticket.priority} />
+                  </div>
+                </div>
               </Link>
-            </article>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
     </main>
   );

@@ -4,9 +4,27 @@ import { Link, useParams } from 'react-router-dom';
 import CommentSection from '../components/CommentSection';
 import PriorityBadge from '../components/PriorityBadge';
 import TicketStatusBadge from '../components/TicketStatusBadge';
-import { closeTicket, getCurrentActor, getTicketById, updateTicketStatus } from '../services/ticketService';
+import { getTicketById } from '../services/ticketService';
 
 const STATUS_FLOW = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
+
+function buildAttachmentImageUrl(attachment) {
+  if (!attachment) {
+    return '';
+  }
+
+  if (typeof attachment.url === 'string' && /^https?:\/\//i.test(attachment.url)) {
+    return attachment.url;
+  }
+
+  const fileName = attachment.storedFileName || attachment.fileName;
+  if (!fileName) {
+    return '';
+  }
+
+  const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8085').replace(/\/$/, '');
+  return `${apiBaseUrl}/uploads/tickets/${encodeURIComponent(fileName)}`;
+}
 
 function TicketDetailPage() {
   const { ticketId } = useParams();
@@ -14,10 +32,7 @@ function TicketDetailPage() {
   const [comments, setComments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const actor = getCurrentActor();
-  const isAdminOrTechnician = actor.role === 'ADMIN' || actor.role === 'TECHNICIAN';
-  const isAdmin = actor.role === 'ADMIN';
+  const [failedAttachmentIds, setFailedAttachmentIds] = useState([]);
 
   useEffect(() => {
     const loadTicket = async () => {
@@ -28,6 +43,7 @@ function TicketDetailPage() {
         const data = await getTicketById(ticketId);
         setTicket(data);
         setComments(data.comments || []);
+        setFailedAttachmentIds([]);
       } catch (loadError) {
         setError(loadError.message || 'Failed to load ticket details.');
       } finally {
@@ -51,53 +67,6 @@ function TicketDetailPage() {
       active: ticket.status === status,
     }));
   }, [ticket]);
-
-  const refreshTicket = async () => {
-    const data = await getTicketById(ticketId);
-    setTicket(data);
-    setComments(data.comments || []);
-  };
-
-  const handleStatusUpdate = async (status) => {
-    if (!ticket) {
-      return;
-    }
-
-    setError('');
-
-    try {
-      const payload = { status };
-      if (status === 'RESOLVED') {
-        payload.resolutionNote = 'Issue resolved and verified on site.';
-      }
-      if (status === 'REJECTED') {
-        payload.rejectionReason = 'Insufficient details to proceed.';
-      }
-
-      await updateTicketStatus(ticket.id, payload);
-      await refreshTicket();
-    } catch (updateError) {
-      setError(updateError.message || 'Unable to update status.');
-    }
-  };
-
-  const handleClose = async () => {
-    if (!ticket) {
-      return;
-    }
-
-    const confirmed = window.confirm('Close this ticket?');
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await closeTicket(ticket.id);
-      await refreshTicket();
-    } catch (closeError) {
-      setError(closeError.message || 'Unable to close ticket.');
-    }
-  };
 
   if (isLoading) {
     return (
@@ -169,25 +138,6 @@ function TicketDetailPage() {
               <dd>{ticket.assignedTechnicianId || 'Unassigned'}</dd>
             </div>
           </dl>
-
-          {isAdminOrTechnician ? (
-            <div className="inline-actions">
-              <button type="button" className="ghost-btn" onClick={() => handleStatusUpdate('IN_PROGRESS')}>
-                Mark In Progress
-              </button>
-              <button type="button" className="ghost-btn" onClick={() => handleStatusUpdate('RESOLVED')}>
-                Mark Resolved
-              </button>
-              <button type="button" className="ghost-btn" onClick={() => handleStatusUpdate('REJECTED')}>
-                Reject
-              </button>
-              {isAdmin ? (
-                <button type="button" className="ghost-btn" onClick={handleClose}>
-                  Close Ticket
-                </button>
-              ) : null}
-            </div>
-          ) : null}
         </article>
 
         <article className="ticket-panel">
@@ -195,11 +145,31 @@ function TicketDetailPage() {
           {ticket.attachments?.length ? (
             <div className="ticket-attachments-grid">
               {ticket.attachments.map((attachment) => {
-                const imageUrl = `${(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8085').replace(/\/$/, '')}/uploads/tickets/${attachment.storedFileName}`;
+                const imageUrl = buildAttachmentImageUrl(attachment);
+                const isImageFailed = failedAttachmentIds.includes(attachment.attachmentId);
 
                 return (
                   <figure key={attachment.attachmentId} className="ticket-attachment-card">
-                    <img src={imageUrl} alt={attachment.fileName} />
+                    {isImageFailed ? (
+                      <div>
+                        <p>Preview unavailable.</p>
+                        <a href={imageUrl} target="_blank" rel="noreferrer">
+                          Open image
+                        </a>
+                      </div>
+                    ) : (
+                      <img
+                        src={imageUrl}
+                        alt={attachment.fileName}
+                        onError={() => {
+                          setFailedAttachmentIds((previous) =>
+                            previous.includes(attachment.attachmentId)
+                              ? previous
+                              : [...previous, attachment.attachmentId]
+                          );
+                        }}
+                      />
+                    )}
                     <figcaption>{attachment.fileName}</figcaption>
                   </figure>
                 );
