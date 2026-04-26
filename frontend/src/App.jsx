@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { authenticateWithGoogle } from './services/authService';
 import { loginTechnician } from './services/technicianService';
@@ -1136,6 +1136,283 @@ function AdminDashboardPage() {
   const location = useLocation();
   const session = getStoredSession();
   const displayName = location.state?.displayName || session?.displayName || 'Administrator';
+  const [accounts, setAccounts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusType, setStatusType] = useState('success');
+  const [editingAccountId, setEditingAccountId] = useState(null);
+  const [activeSection, setActiveSection] = useState('users');
+  const [accountForm, setAccountForm] = useState({
+    fullName: '',
+    lastName: '',
+    username: '',
+    mobileNumber: '',
+    email: '',
+    password: '',
+    role: ROLE_USER,
+  });
+
+  const syncAccountsFromStorage = () => {
+    const normalizedAccounts = getStoredAccounts().map((account) => ({
+      ...account,
+      accountId: account.accountId || `acc-${Date.now()}-${Math.random().toString(16).slice(2, 9)}`,
+      displayName: account.displayName || createDisplayName(account),
+    }));
+
+    setAccounts(normalizedAccounts);
+    saveAccounts(normalizedAccounts);
+  };
+
+  useEffect(() => {
+    syncAccountsFromStorage();
+  }, []);
+
+  const filteredAccounts = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return accounts.filter((account) => {
+      if (account.role === ROLE_ADMIN) {
+        return false;
+      }
+
+      const matchesRole = roleFilter === 'all' ? true : account.role === roleFilter;
+
+      if (!matchesRole) {
+        return false;
+      }
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      const searchableFields = [
+        account.fullName,
+        account.lastName,
+        account.displayName,
+        account.username,
+        account.email,
+        account.mobileNumber,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return searchableFields.includes(normalizedSearch);
+    });
+  }, [accounts, roleFilter, searchTerm]);
+
+  const accountCounts = useMemo(() => {
+    const userCount = accounts.filter((account) => account.role === ROLE_USER).length;
+    const technicianCount = accounts.filter((account) => account.role === ROLE_TECHNICIAN).length;
+
+    return {
+      total: userCount + technicianCount,
+      users: userCount,
+      technicians: technicianCount,
+    };
+  }, [accounts]);
+
+  const resetForm = () => {
+    setEditingAccountId(null);
+    setAccountForm({
+      fullName: '',
+      lastName: '',
+      username: '',
+      mobileNumber: '',
+      email: '',
+      password: '',
+      role: ROLE_USER,
+    });
+  };
+
+  const setFeedback = (message, type = 'success') => {
+    setStatusMessage(message);
+    setStatusType(type);
+  };
+
+  const validateAdminAccountForm = (values) => {
+    if (!values.fullName.trim()) {
+      return 'First name is required.';
+    }
+
+    if (!values.lastName.trim()) {
+      return 'Last name is required.';
+    }
+
+    if (!/^[A-Za-z][A-Za-z\s'-]{1,39}$/.test(values.fullName.trim())) {
+      return 'First name must contain 2-40 valid characters.';
+    }
+
+    if (!/^[A-Za-z][A-Za-z\s'-]{1,39}$/.test(values.lastName.trim())) {
+      return 'Last name must contain 2-40 valid characters.';
+    }
+
+    if (!values.username.trim()) {
+      return 'Username is required.';
+    }
+
+    if (!/^[A-Za-z0-9._]{3,20}$/.test(values.username.trim())) {
+      return 'Username must use 3-20 letters, numbers, dots, or underscores.';
+    }
+
+    if (!values.mobileNumber.trim()) {
+      return 'Mobile number is required.';
+    }
+
+    if (!/^\+?[0-9]{10,15}$/.test(values.mobileNumber.trim())) {
+      return 'Mobile number must use 10-15 digits (optional + prefix).';
+    }
+
+    if (!values.email.trim()) {
+      return 'Email is required.';
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
+      return 'Email address is not valid.';
+    }
+
+    if (!editingAccountId && !values.password) {
+      return 'Password is required for new accounts.';
+    }
+
+    if (values.password && values.password.length < 8) {
+      return 'Password must contain at least 8 characters.';
+    }
+
+    if (
+      values.password &&
+      !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/.test(values.password)
+    ) {
+      return 'Password must include upper, lower, number, and special character.';
+    }
+
+    if (![ROLE_USER, ROLE_TECHNICIAN].includes(values.role)) {
+      return 'Role must be User or Technician.';
+    }
+
+    return '';
+  };
+
+  const hasDuplicateIdentity = (values) => {
+    const normalizedEmail = values.email.trim().toLowerCase();
+    const normalizedUsername = values.username.trim().toLowerCase();
+
+    return accounts.some((account) => {
+      if (account.accountId === editingAccountId) {
+        return false;
+      }
+
+      return (
+        account.email.toLowerCase() === normalizedEmail ||
+        account.username.toLowerCase() === normalizedUsername
+      );
+    });
+  };
+
+  const handleFormChange = (event) => {
+    const { name, value } = event.target;
+    setAccountForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+    if (statusMessage) {
+      setStatusMessage('');
+    }
+  };
+
+  const handleAccountSubmit = (event) => {
+    event.preventDefault();
+
+    const validationError = validateAdminAccountForm(accountForm);
+    if (validationError) {
+      setFeedback(validationError, 'error');
+      return;
+    }
+
+    if (hasDuplicateIdentity(accountForm)) {
+      setFeedback('An account with this email or username already exists.', 'error');
+      return;
+    }
+
+    const nextRecord = {
+      accountId: editingAccountId || `acc-${Date.now()}-${Math.random().toString(16).slice(2, 9)}`,
+      fullName: accountForm.fullName.trim(),
+      lastName: accountForm.lastName.trim(),
+      username: accountForm.username.trim(),
+      mobileNumber: accountForm.mobileNumber.trim(),
+      email: accountForm.email.trim(),
+      role: accountForm.role,
+      displayName: createDisplayName(accountForm),
+    };
+
+    if (accountForm.password) {
+      nextRecord.password = accountForm.password;
+    }
+
+    let updatedAccounts;
+
+    if (editingAccountId) {
+      updatedAccounts = accounts.map((account) => {
+        if (account.accountId !== editingAccountId) {
+          return account;
+        }
+
+        return {
+          ...account,
+          ...nextRecord,
+          password: nextRecord.password || account.password,
+        };
+      });
+      setFeedback('Account updated successfully.');
+    } else {
+      updatedAccounts = [
+        ...accounts,
+        {
+          ...nextRecord,
+          password: nextRecord.password,
+        },
+      ];
+      setFeedback('New account created successfully.');
+    }
+
+    saveAccounts(updatedAccounts);
+    setAccounts(updatedAccounts);
+    resetForm();
+  };
+
+  const handleAccountEdit = (account) => {
+    setActiveSection('create');
+    setEditingAccountId(account.accountId);
+    setAccountForm({
+      fullName: account.fullName || '',
+      lastName: account.lastName || '',
+      username: account.username || '',
+      mobileNumber: account.mobileNumber || '',
+      email: account.email || '',
+      password: '',
+      role: account.role || ROLE_USER,
+    });
+    setFeedback(`Editing ${account.displayName || account.username}`, 'success');
+  };
+
+  const handleAccountDelete = (account) => {
+    const confirmed = window.confirm(`Delete account for ${account.displayName || account.username}?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    const updatedAccounts = accounts.filter((existingAccount) => existingAccount.accountId !== account.accountId);
+    saveAccounts(updatedAccounts);
+    setAccounts(updatedAccounts);
+
+    if (editingAccountId === account.accountId) {
+      resetForm();
+    }
+
+    setFeedback('Account deleted successfully.');
+  };
 
   if (!session) {
     return <Navigate to="/admin-login" replace state={{ notice: 'Please sign in as an admin first.' }} />;
@@ -1159,71 +1436,318 @@ function AdminDashboardPage() {
   };
 
   return (
-    <main className="home-page admin-page">
-      <section className="home-hero admin-hero" aria-label="admin intro">
-        <div className="home-hero-copy">
-          <p className="home-kicker">Admin Control Panel</p>
-          <h1>
-            Welcome, {displayName}
-            <span className="home-role-pill home-role-pill-admin">Admin</span>
-          </h1>
-          <p>
-            Review campus operations, manage privileged workflows, and keep restricted tools in one
-            controlled space.
-          </p>
-          <div className="home-actions">
-            <Link to="/resources" className="home-btn home-btn-primary link-btn">
-              Manage Resources
-            </Link>
-            <Link to="/tickets/admin" className="home-btn home-btn-outline link-btn">
-              Manage Tickets
-            </Link>
-            <Link to="/admin/bookings" className="home-btn home-btn-outline link-btn">
-              Review Booking Requests
-            </Link>
+    <main className="admin-dashboard-page">
+      <aside className="admin-sidebar" aria-label="Admin navigation">
+        <div className="admin-sidebar-top">
+          <p className="admin-brand-kicker">Smart Campus</p>
+          <h2>Admin Console</h2>
+          <p className="admin-sidebar-copy">Privileged workspace for campus operations and access control.</p>
+        </div>
+
+        <nav className="admin-nav" aria-label="Admin modules">
+          <button
+            type="button"
+            className={`admin-nav-item ${activeSection === 'overview' ? 'admin-nav-item-active' : ''}`}
+            onClick={() => setActiveSection('overview')}
+          >
+            Dashboard Overview
+          </button>
+          <button
+            type="button"
+            className={`admin-nav-item ${activeSection === 'users' ? 'admin-nav-item-active' : ''}`}
+            onClick={() => setActiveSection('users')}
+          >
+            User Management
+          </button>
+          <button
+            type="button"
+            className={`admin-nav-item ${activeSection === 'create' ? 'admin-nav-item-active' : ''}`}
+            onClick={() => setActiveSection('create')}
+          >
+            Create Account
+          </button>
+          <button
+            type="button"
+            className={`admin-nav-item ${activeSection === 'ticketDesk' ? 'admin-nav-item-active' : ''}`}
+            onClick={() => setActiveSection('ticketDesk')}
+          >
+            Technician Ticket Desk
+          </button>
+          <Link to="/resources" className="admin-nav-item">
+            Resources
+          </Link>
+          <Link to="/tickets/admin" className="admin-nav-item">
+            Tickets
+          </Link>
+          <Link to="/admin/bookings" className="admin-nav-item">
+            Bookings
+          </Link>
+        </nav>
+
+        <div className="admin-sidebar-footer">
+          <button type="button" className="admin-signout-btn" onClick={handleSignOut}>
+            Sign out
+          </button>
+          <Link to="/admin-login" className="admin-back-link">
+            Back to admin sign in
+          </Link>
+        </div>
+      </aside>
+
+      <section className="admin-main" aria-label="admin dashboard">
+        <section className="admin-main-hero" aria-label="admin intro">
+          <div>
+            <p className="admin-kicker">Administrator workspace</p>
+            <h1>
+              Welcome, {displayName} <span className="admin-role-tag">Admin</span>
+            </h1>
+            <p>
+              Keep role assignments accurate, monitor user access, and control platform workflows from one
+              professional panel.
+            </p>
           </div>
-        </div>
 
-        <div className="home-status-card admin-status-card" aria-label="admin summary">
-          <h2>Admin snapshot</h2>
-          <ul>
-            <li>
-              <span>Pending approvals</span>
-              <strong>4</strong>
-            </li>
-            <li>
-              <span>Open incidents</span>
-              <strong>1</strong>
-            </li>
-            <li>
-              <span>Restricted modules</span>
-              <strong>8 active</strong>
-            </li>
-          </ul>
-        </div>
+          <div className="admin-snapshot" aria-label="admin snapshot">
+            <h3>Snapshot</h3>
+            <ul>
+              <li>
+                <span>Total managed accounts</span>
+                <strong>{accountCounts.total}</strong>
+              </li>
+              <li>
+                <span>Users</span>
+                <strong>{accountCounts.users}</strong>
+              </li>
+              <li>
+                <span>Technicians</span>
+                <strong>{accountCounts.technicians}</strong>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        {activeSection === 'overview' ? (
+          <section className="admin-overview-grid" aria-label="overview modules">
+            <article className="admin-overview-card">
+              <h3>Account Oversight</h3>
+              <p>Track account growth, quickly audit roles, and maintain accurate access levels.</p>
+              <button type="button" onClick={() => setActiveSection('users')}>
+                Open User Management
+              </button>
+            </article>
+            <article className="admin-overview-card">
+              <h3>Resource Operations</h3>
+              <p>Manage labs, equipment, and facility availability from the centralized resource module.</p>
+              <Link to="/resources">Open Resources</Link>
+            </article>
+            <article className="admin-overview-card">
+              <h3>Support Governance</h3>
+              <p>Review tickets and booking approvals to keep campus workflows stable and transparent.</p>
+              <div className="admin-overview-actions">
+                <Link to="/tickets/admin">Tickets</Link>
+                <Link to="/admin/bookings">Bookings</Link>
+              </div>
+            </article>
+          </section>
+        ) : null}
+
+        {activeSection === 'users' ? (
+          <section className="admin-users-only" aria-label="user management">
+            <article className="admin-users-table-card">
+              <header className="admin-section-head">
+                <h2>User Management</h2>
+                <p>Review, filter, and manage User or Technician accounts.</p>
+              </header>
+
+              <div className="admin-users-filters">
+                <input
+                  type="search"
+                  placeholder="Search by name, username, email, or phone"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                />
+
+                <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
+                  <option value="all">All roles</option>
+                  <option value={ROLE_USER}>Users</option>
+                  <option value={ROLE_TECHNICIAN}>Technicians</option>
+                </select>
+              </div>
+
+              {statusMessage ? (
+                <p className={`admin-status-message ${statusType === 'error' ? 'is-error' : 'is-success'}`}>
+                  {statusMessage}
+                </p>
+              ) : null}
+
+              <div className="admin-users-table-wrap">
+                <table className="admin-users-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Username</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>Role</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAccounts.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="admin-empty-cell">
+                          No accounts found for your current filter.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredAccounts.map((account) => (
+                        <tr key={account.accountId}>
+                          <td>{account.displayName || `${account.fullName} ${account.lastName}`}</td>
+                          <td>{account.username}</td>
+                          <td>{account.email}</td>
+                          <td>{account.mobileNumber}</td>
+                          <td>
+                            <span
+                              className={`admin-role-chip ${
+                                account.role === ROLE_TECHNICIAN ? 'technician' : 'user'
+                              }`}
+                            >
+                              {account.role === ROLE_TECHNICIAN ? 'Technician' : 'User'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="admin-table-actions">
+                              <button type="button" onClick={() => handleAccountEdit(account)}>
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="danger"
+                                onClick={() => handleAccountDelete(account)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+        ) : null}
+
+        {activeSection === 'create' ? (
+          <section className="admin-create-section" aria-label="create account">
+            <article className="admin-user-form-card admin-user-form-card-wide">
+              <header className="admin-section-head">
+                <h2>{editingAccountId ? 'Edit Account' : 'Create Account'}</h2>
+                <p>
+                  {editingAccountId
+                    ? 'Update account details and save changes.'
+                    : 'Add a new User or Technician account.'}
+                </p>
+              </header>
+
+              {statusMessage ? (
+                <p className={`admin-status-message ${statusType === 'error' ? 'is-error' : 'is-success'}`}>
+                  {statusMessage}
+                </p>
+              ) : null}
+
+              <form className="admin-user-form admin-user-form-grid" onSubmit={handleAccountSubmit}>
+                <label htmlFor="admin-form-fullName-create">First Name</label>
+                <input
+                  id="admin-form-fullName-create"
+                  name="fullName"
+                  value={accountForm.fullName}
+                  onChange={handleFormChange}
+                  placeholder="First name"
+                />
+
+                <label htmlFor="admin-form-lastName-create">Last Name</label>
+                <input
+                  id="admin-form-lastName-create"
+                  name="lastName"
+                  value={accountForm.lastName}
+                  onChange={handleFormChange}
+                  placeholder="Last name"
+                />
+
+                <label htmlFor="admin-form-username-create">Username</label>
+                <input
+                  id="admin-form-username-create"
+                  name="username"
+                  value={accountForm.username}
+                  onChange={handleFormChange}
+                  placeholder="Username"
+                />
+
+                <label htmlFor="admin-form-email-create">Email</label>
+                <input
+                  id="admin-form-email-create"
+                  name="email"
+                  type="email"
+                  value={accountForm.email}
+                  onChange={handleFormChange}
+                  placeholder="name@example.com"
+                />
+
+                <label htmlFor="admin-form-mobileNumber-create">Mobile Number</label>
+                <input
+                  id="admin-form-mobileNumber-create"
+                  name="mobileNumber"
+                  value={accountForm.mobileNumber}
+                  onChange={handleFormChange}
+                  placeholder="+94771234567"
+                />
+
+                <label htmlFor="admin-form-role-create">Role</label>
+                <select id="admin-form-role-create" name="role" value={accountForm.role} onChange={handleFormChange}>
+                  <option value={ROLE_USER}>User</option>
+                  <option value={ROLE_TECHNICIAN}>Technician</option>
+                </select>
+
+                <label htmlFor="admin-form-password-create">
+                  {editingAccountId ? 'Password (optional)' : 'Password'}
+                </label>
+                <input
+                  id="admin-form-password-create"
+                  name="password"
+                  type="password"
+                  value={accountForm.password}
+                  onChange={handleFormChange}
+                  placeholder={editingAccountId ? 'Leave blank to keep current password' : 'Set a password'}
+                />
+
+                <div className="admin-form-actions admin-form-actions-full">
+                  <button type="submit" className="admin-primary-btn">
+                    {editingAccountId ? 'Save Changes' : 'Create Account'}
+                  </button>
+                  <button type="button" className="admin-secondary-btn" onClick={resetForm}>
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-secondary-btn"
+                    onClick={() => setActiveSection('users')}
+                  >
+                    Back to User Management
+                  </button>
+                </div>
+              </form>
+            </article>
+          </section>
+        ) : null}
+
+        {activeSection === 'ticketDesk' ? (
+          <section className="admin-ticket-desk-section" aria-label="technician ticket desk section">
+            <AdminTicketsPage embedded />
+          </section>
+        ) : null}
       </section>
-
-      <section className="home-grid admin-grid" aria-label="admin tasks">
-        <article className="home-tile">
-          <h3>Account Oversight</h3>
-          <p>Review role assignments and confirm that access stays aligned with policy.</p>
-        </article>
-        <article className="home-tile">
-          <h3>Service Health</h3>
-          <p>Check the status of campus systems and respond to operational issues.</p>
-        </article>
-        <article className="home-tile">
-          <h3>Compliance Review</h3>
-          <p>Monitor activity logs and restricted actions for accountability.</p>
-        </article>
-      </section>
-
-      <nav className="home-nav-links" aria-label="admin session links">
-        <button type="button" className="home-link-button" onClick={handleSignOut}>
-          Sign out
-        </button>
-        <Link to="/admin-login">Return to admin sign in</Link>
-      </nav>
     </main>
   );
 }

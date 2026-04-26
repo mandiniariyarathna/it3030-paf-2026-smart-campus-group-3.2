@@ -38,7 +38,7 @@ function getTechnicianOptionsForCategory(category, technicians) {
   });
 }
 
-function AdminTicketsPage() {
+function AdminTicketsPage({ embedded = false }) {
   const [filters, setFilters] = useState(defaultFilters);
   const [tickets, setTickets] = useState([]);
   const [technicians, setTechnicians] = useState([]);
@@ -118,20 +118,25 @@ function AdminTicketsPage() {
     await handleStatusUpdate(ticketId, 'REJECTED', { rejectionReason: rejectionReason.trim() });
   };
 
+  const WrapperTag = embedded ? 'section' : 'main';
+
   return (
-    <main className="ticket-page">
-      <header className="ticket-page-head">
+    <WrapperTag
+      className={`ticket-page ticket-page-admin-desk ${embedded ? 'ticket-page-embedded' : ''}`.trim()}
+      aria-label="admin technician ticket desk"
+    >
+      <header className="ticket-page-head ticket-page-head-admin">
         <div>
           <p className="home-kicker">Maintenance & Incident Ticketing</p>
           <h1>Admin / Technician Ticket Desk</h1>
           <p>Filter, assign, and progress incident tickets from one control panel.</p>
         </div>
-        <Link to="/admin/technicians" className="ticket-link-btn ghost-btn">
+        <Link to="/admin/technicians" className="ticket-link-btn ticket-link-btn-admin">
           Manage Technicians
         </Link>
       </header>
 
-      <section className="ticket-filter-row">
+      <section className="ticket-filter-row ticket-filter-row-admin">
         <select value={filters.status} onChange={(event) => setFilters((previous) => ({ ...previous, status: event.target.value }))}>
           <option value="">All Statuses</option>
           <option value="OPEN">Open</option>
@@ -157,14 +162,14 @@ function AdminTicketsPage() {
         </select>
       </section>
 
-      <section className="ticket-table-panel">
+      <section className="ticket-table-panel ticket-table-panel-admin">
         {isLoading ? <p>Loading tickets...</p> : null}
         {!isLoading && error ? <p className="field-error">{error}</p> : null}
         {!isLoading && !error && tickets.length === 0 ? <p>No tickets found for current filters.</p> : null}
 
         {!isLoading && tickets.length > 0 ? (
           <div className="ticket-table-wrap">
-            <table className="ticket-table">
+            <table className="ticket-table ticket-table-admin">
               <thead>
                 <tr>
                   <th>Location</th>
@@ -194,12 +199,12 @@ function AdminTicketsPage() {
                     </td>
                     <td>{technicianNameById.get(ticket.assignedTechnicianId) || 'Unassigned'}</td>
                     <td>
-                      <div className="inline-actions">
+                      <div className="inline-actions inline-actions-admin">
                         <select
                           value={ticket.assignedTechnicianId || ''}
                           onChange={(e) => handleAssign(ticket.id, e.target.value)}
                           disabled={ticket.status !== 'OPEN'}
-                          className="ghost-btn"
+                          className="ticket-assign-select"
                         >
                           <option value="">Select Technician</option>
                           {getTechnicianOptionsForCategory(ticket.category, technicians).map((tech) => (
@@ -210,7 +215,7 @@ function AdminTicketsPage() {
                         </select>
                         <button
                           type="button"
-                          className="ghost-btn"
+                          className="ticket-reject-btn"
                           onClick={() => handleReject(ticket.id)}
                           disabled={ticket.status !== 'OPEN'}
                         >
@@ -225,7 +230,7 @@ function AdminTicketsPage() {
           </div>
         ) : null}
       </section>
-    </main>
+    </WrapperTag>
   );
 }
 
