@@ -834,6 +834,54 @@ body {
   box-shadow: var(--shadow-md);
 }
 
+.resource-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(7, 24, 38, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+.resource-modal-dialog {
+  position: relative;
+  width: min(980px, 100%);
+  max-height: min(92vh, 980px);
+  overflow: auto;
+  border-radius: 22px;
+  box-shadow: 0 30px 80px rgba(8, 26, 45, 0.38);
+}
+
+.resource-modal-dialog .resource-form-panel {
+  margin-top: 0;
+  border-radius: 22px;
+}
+
+.resource-modal-close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 1;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 999px;
+  background: rgba(15, 39, 64, 0.1);
+  color: #0e3557;
+  font: inherit;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.16s ease, background 0.16s ease;
+}
+
+.resource-modal-close:hover {
+  transform: scale(1.04);
+  background: rgba(15, 39, 64, 0.16);
+}
+
 .resource-form-head {
   margin-bottom: 0.9rem;
 }
