@@ -1,4 +1,4 @@
-function BookingCard({ booking, isAdmin, onView, onCancel, onApprove, onReject }) {
+function BookingCard({ booking, isAdmin, onView, onCancel, onApprove, onReject, onEdit }) {
   const statusClass = `booking-status booking-status-${(booking.status || '').toLowerCase()}`;
   const resourceLabel = booking.resourceName || booking.resourceId;
 
@@ -31,6 +31,12 @@ function BookingCard({ booking, isAdmin, onView, onCancel, onApprove, onReject }
         <button type="button" className="booking-btn booking-btn-ghost" onClick={() => onView(booking)}>
           View
         </button>
+
+        {booking.status === 'PENDING' && onEdit ? (
+          <button type="button" className="booking-btn booking-btn-secondary" onClick={() => onEdit(booking)}>
+            Edit
+          </button>
+        ) : null}
 
         {(booking.status === 'PENDING' || booking.status === 'APPROVED') && onCancel ? (
           <button type="button" className="booking-btn booking-btn-danger" onClick={() => onCancel(booking)}>

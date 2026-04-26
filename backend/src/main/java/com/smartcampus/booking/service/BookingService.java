@@ -141,6 +141,44 @@ public class BookingService {
         return toDto(bookingRepository.save(booking));
     }
 
+    public BookingDTO updateBooking(String bookingId, BookingRequestDTO request, String userRole, String userId) {
+        Booking booking = getBookingEntityById(bookingId);
+
+        if (!isAdmin(userRole) && !booking.getUserId().equals(resolveBookingUserId(userId))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only edit your own bookings");
+        }
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalArgumentException("Only pending bookings can be edited");
+        }
+
+        validateDateAndTime(request.getDate(), request.getStartTime(), request.getEndTime());
+
+        ObjectId resourceId = resolveRequiredObjectId(request.getResourceId(), "Resource ID");
+        List<Booking> conflicts = bookingRepository.findConflictingBookings(
+                resourceId,
+                request.getDate(),
+                request.getStartTime(),
+                request.getEndTime());
+
+        boolean hasOtherConflicts = conflicts.stream().anyMatch(conflict -> !conflict.getId().equals(booking.getId()));
+        if (hasOtherConflicts) {
+            throw new IllegalArgumentException("Requested time slot conflicts with an approved booking");
+        }
+
+        booking.setResourceId(resourceId);
+        booking.setDate(request.getDate());
+        booking.setStartTime(request.getStartTime());
+        booking.setEndTime(request.getEndTime());
+        booking.setPurpose(request.getPurpose());
+        booking.setExpectedAttendees(request.getExpectedAttendees());
+        booking.setRejectionReason(null);
+        booking.setReviewedBy(null);
+        booking.setReviewedAt(null);
+
+        return toDto(bookingRepository.save(booking));
+    }
+
     public List<BookingDTO> getBookingsForResource(String resourceId) {
         ObjectId resourceObjectId = resolveRequiredObjectId(resourceId, "Resource ID");
 

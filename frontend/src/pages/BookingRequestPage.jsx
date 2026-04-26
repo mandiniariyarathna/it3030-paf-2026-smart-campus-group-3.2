@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { createBookingRequest, getBookingsForResource } from '../services/bookingService';
+import { createBookingRequest, getBookingById, getBookingsForResource, updateBookingRequest } from '../services/bookingService';
 import { getResources } from '../services/resourceService';
 
 const initialForm = {
@@ -14,10 +14,13 @@ const initialForm = {
 };
 
 function BookingRequestPage() {
+  const navigate = useNavigate();
   const [form, setForm] = useState(initialForm);
   const [resources, setResources] = useState([]);
   const [searchParams] = useSearchParams();
+  const [editingBookingId, setEditingBookingId] = useState('');
   const [isLoadingResources, setIsLoadingResources] = useState(true);
+  const [isLoadingBooking, setIsLoadingBooking] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -48,6 +51,9 @@ function BookingRequestPage() {
 
   useEffect(() => {
     const resourceId = searchParams.get('resourceId');
+    const editBookingId = searchParams.get('editBookingId');
+
+    setEditingBookingId(editBookingId || '');
 
     if (resourceId) {
       setForm((previous) => ({
@@ -56,6 +62,36 @@ function BookingRequestPage() {
       }));
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!editingBookingId) {
+      return;
+    }
+
+    const loadBookingForEdit = async () => {
+      setIsLoadingBooking(true);
+      setError('');
+
+      try {
+        const booking = await getBookingById(editingBookingId);
+
+        setForm({
+          resourceId: booking.resourceId || '',
+          date: booking.date || '',
+          startTime: booking.startTime || '',
+          endTime: booking.endTime || '',
+          purpose: booking.purpose || '',
+          expectedAttendees: booking.expectedAttendees ? String(booking.expectedAttendees) : '',
+        });
+      } catch (loadError) {
+        setError(loadError.message || 'Unable to load booking details for editing.');
+      } finally {
+        setIsLoadingBooking(false);
+      }
+    };
+
+    loadBookingForEdit();
+  }, [editingBookingId]);
 
   const selectedResource = useMemo(
     () => resources.find((resource) => resource.id === form.resourceId),
@@ -129,17 +165,30 @@ function BookingRequestPage() {
         return;
       }
 
-      await createBookingRequest({
+      const payload = {
         resourceId: form.resourceId,
         date: form.date,
         startTime: form.startTime,
         endTime: form.endTime,
         purpose: form.purpose,
         expectedAttendees: form.expectedAttendees ? Number(form.expectedAttendees) : undefined,
-      });
+      };
 
-      setSuccessMessage('Booking request submitted successfully. You can track it from My Bookings.');
+      if (editingBookingId) {
+        await updateBookingRequest(editingBookingId, payload);
+      } else {
+        await createBookingRequest(payload);
+      }
+
+      setSuccessMessage(
+        editingBookingId
+          ? 'Booking updated successfully. You can track it from My Bookings.'
+          : 'Booking request submitted successfully. You can track it from My Bookings.'
+      );
       setForm(initialForm);
+      if (editingBookingId) {
+        navigate('/my-bookings');
+      }
     } catch (submitError) {
       const message = submitError.message || 'Unable to submit booking request.';
       if (message.toLowerCase().includes('conflict')) {
@@ -157,9 +206,11 @@ function BookingRequestPage() {
       <header className="booking-head">
         <div>
           <p className="home-kicker">Booking Management</p>
-          <h1>Request a Resource Booking</h1>
+          <h1>{editingBookingId ? 'Edit Booking Request' : 'Request a Resource Booking'}</h1>
           <p className="booking-copy">
-            Select an active resource from its own Book Now button and submit your preferred date and time slot.
+            {editingBookingId
+              ? 'Update your pending booking details and submit the changes.'
+              : 'Select an active resource from its own Book Now button and submit your preferred date and time slot.'}
           </p>
         </div>
         <div className="booking-head-actions">
@@ -174,13 +225,15 @@ function BookingRequestPage() {
 
       <section className="booking-panel">
         <form className="booking-form" onSubmit={handleSubmit}>
+          {isLoadingBooking ? <p className="booking-hint">Loading booking details...</p> : null}
+
           <label htmlFor="resourceId">Resource</label>
           <select
             id="resourceId"
             name="resourceId"
             value={form.resourceId}
             onChange={handleChange}
-            disabled={isLoadingResources}
+            disabled={isLoadingResources || isLoadingBooking}
             required
           >
             <option value="">Select a resource</option>
@@ -271,9 +324,9 @@ function BookingRequestPage() {
           <button
             type="submit"
             className="primary-btn"
-            disabled={isSubmitting || isLoadingResources || conflicts.length > 0}
+            disabled={isSubmitting || isLoadingResources || isLoadingBooking || conflicts.length > 0}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Booking Request'}
+            {isSubmitting ? 'Submitting...' : editingBookingId ? 'Save Booking Changes' : 'Submit Booking Request'}
           </button>
         </form>
       </section>

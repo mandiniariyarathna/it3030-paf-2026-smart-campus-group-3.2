@@ -142,6 +142,28 @@ export async function cancelBooking(id) {
   return data?.data;
 }
 
+export async function updateBookingRequest(id, payload) {
+  const userId = resolveCurrentUserId();
+
+  if (!userId) {
+    throw new Error('Please sign in before editing a booking request.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}${BOOKING_ENDPOINT}/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders({
+      'Content-Type': 'application/json',
+    }),
+    body: JSON.stringify({
+      ...payload,
+      userId,
+    }),
+  });
+
+  const data = await parseResponse(response, 'Unable to update booking request.');
+  return data?.data;
+}
+
 export async function getBookingsForResource(resourceId) {
   const response = await fetch(`${API_BASE_URL}${RESOURCE_ENDPOINT}/${resourceId}/bookings`, {
     headers: buildHeaders(),

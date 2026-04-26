@@ -159,6 +159,28 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/bookings/{id}")
+    @Operation(summary = "Edit booking", description = "Edit a pending booking as owner or admin")
+    @ApiResponse(responseCode = "200", description = "Booking updated successfully")
+    public ResponseEntity<BookingResponseDTO> updateBooking(
+            @PathVariable String id,
+            @Valid @RequestBody BookingRequestDTO request,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "X-User-Id header is required");
+        }
+
+        BookingResponseDTO response = BookingResponseDTO.builder()
+                .success(true)
+                .data(bookingService.updateBooking(id, request, userRole, userId))
+                .message("Booking updated successfully")
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/resources/{id}/bookings")
     @Operation(summary = "List bookings for resource", description = "Get all bookings for a resource id")
     @ApiResponse(responseCode = "200", description = "Resource bookings fetched successfully")

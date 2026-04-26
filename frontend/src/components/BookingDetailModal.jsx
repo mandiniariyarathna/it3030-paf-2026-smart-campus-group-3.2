@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-function BookingDetailModal({ booking, isAdmin, onClose, onApprove, onReject, onCancel }) {
+function BookingDetailModal({ booking, isAdmin, onClose, onApprove, onReject, onCancel, onEdit }) {
   const [reason, setReason] = useState('');
 
   if (!booking) {
@@ -44,6 +44,12 @@ function BookingDetailModal({ booking, isAdmin, onClose, onApprove, onReject, on
         {booking.rejectionReason ? <p className="booking-reason">Reason: {booking.rejectionReason}</p> : null}
 
         <footer className="booking-modal-actions">
+          {onEdit && booking.status === 'PENDING' ? (
+            <button type="button" className="booking-btn booking-btn-secondary" onClick={() => onEdit(booking)}>
+              Edit Booking
+            </button>
+          ) : null}
+
           {onCancel && (booking.status === 'PENDING' || booking.status === 'APPROVED') ? (
             <button type="button" className="booking-btn booking-btn-danger" onClick={() => onCancel(booking)}>
               Cancel Booking

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import BookingCard from '../components/BookingCard';
 import BookingDetailModal from '../components/BookingDetailModal';
@@ -19,6 +19,7 @@ function attachResourceNames(bookings, resources) {
 }
 
 function MyBookingsPage() {
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,6 +60,10 @@ function MyBookingsPage() {
     }
   };
 
+  const handleEdit = (booking) => {
+    navigate(`/bookings/new?editBookingId=${booking.id}`);
+  };
+
   return (
     <main className="booking-page">
       <header className="booking-head">
@@ -90,12 +95,19 @@ function MyBookingsPage() {
             booking={booking}
             isAdmin={false}
             onView={setSelectedBooking}
+            onEdit={handleEdit}
             onCancel={handleCancel}
           />
         ))}
       </section>
 
-      <BookingDetailModal booking={selectedBooking} isAdmin={false} onClose={() => setSelectedBooking(null)} onCancel={handleCancel} />
+      <BookingDetailModal
+        booking={selectedBooking}
+        isAdmin={false}
+        onClose={() => setSelectedBooking(null)}
+        onEdit={handleEdit}
+        onCancel={handleCancel}
+      />
     </main>
   );
 }

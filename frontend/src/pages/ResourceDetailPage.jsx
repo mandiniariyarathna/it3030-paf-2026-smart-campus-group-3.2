@@ -3,8 +3,18 @@ import { Link, useParams } from 'react-router-dom';
 
 import { getResourceAvailability, getResourceById } from '../services/resourceService';
 
+function getSessionRole() {
+  try {
+    const session = JSON.parse(window.localStorage.getItem('smart-campus-session') || 'null');
+    return (session?.role || '').toUpperCase();
+  } catch {
+    return '';
+  }
+}
+
 function ResourceDetailPage() {
   const { id } = useParams();
+  const isAdmin = getSessionRole() === 'ADMIN';
   const [resource, setResource] = useState(null);
   const [availability, setAvailability] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -102,9 +112,11 @@ function ResourceDetailPage() {
       </section>
 
       <section className="resource-detail-actions">
-        <Link to={`/bookings/new?resourceId=${resource.id}`} className="primary-btn link-btn book-now-btn">
-          Book Now
-        </Link>
+        {!isAdmin ? (
+          <Link to={`/bookings/new?resourceId=${resource.id}`} className="primary-btn link-btn book-now-btn">
+            Book Now
+          </Link>
+        ) : null}
         <Link to="/resources" className="resource-link ghost-btn">
           Back to Resources
         </Link>
