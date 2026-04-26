@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 import PriorityBadge from '../components/PriorityBadge';
 import TicketStatusBadge from '../components/TicketStatusBadge';
@@ -118,6 +120,55 @@ function AdminTicketsPage() {
     await handleStatusUpdate(ticketId, 'REJECTED', { rejectionReason: rejectionReason.trim() });
   };
 
+  const handleDownloadCSV = () => {
+    if (!tickets.length) return;
+    const headers = ['Location', 'Category', 'Reporter', 'Status', 'Priority', 'Assigned Name'];
+    const csvContent = [
+      headers.join(','),
+      ...tickets.map(t => [
+        `"${(t.location || '').replace(/"/g, '""')}"`,
+        `"${getCategoryLabel(t.category)}"`,
+        `"${t.reporterId}"`,
+        `"${t.status}"`,
+        `"${t.priority}"`,
+        `"${technicianNameById.get(t.assignedTechnicianId) || 'Unassigned'}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'tickets_export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDownloadPDF = () => {
+    if (!tickets.length) return;
+    const doc = new jsPDF();
+    doc.text('Tickets Report', 14, 15);
+    
+    const tableColumn = ['Location', 'Category', 'Reporter', 'Status', 'Priority', 'Assigned Name'];
+    const tableRows = tickets.map(t => [
+      t.location || '',
+      getCategoryLabel(t.category),
+      t.reporterId,
+      t.status,
+      t.priority,
+      technicianNameById.get(t.assignedTechnicianId) || 'Unassigned'
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20,
+    });
+    
+    doc.save('tickets_export.pdf');
+  };
+
   return (
     <main className="ticket-page">
       <header className="ticket-page-head">
@@ -126,9 +177,17 @@ function AdminTicketsPage() {
           <h1>Admin / Technician Ticket Desk</h1>
           <p>Filter, assign, and progress incident tickets from one control panel.</p>
         </div>
-        <Link to="/admin/technicians" className="ticket-link-btn ghost-btn">
-          Manage Technicians
-        </Link>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <button type="button" onClick={handleDownloadCSV} className="ticket-link-btn ghost-btn" disabled={tickets.length === 0}>
+            Download CSV
+          </button>
+          <button type="button" onClick={handleDownloadPDF} className="ticket-link-btn ghost-btn" disabled={tickets.length === 0}>
+            Download PDF
+          </button>
+          <Link to="/admin/technicians" className="ticket-link-btn ghost-btn">
+            Manage Technicians
+          </Link>
+        </div>
       </header>
 
       <section className="ticket-filter-row">

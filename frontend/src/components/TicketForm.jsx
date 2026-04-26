@@ -95,7 +95,23 @@ function TicketForm({
           <select
             id="category"
             value={formData.category}
-            onChange={(event) => onFieldChange('category', event.target.value)}
+            onChange={(event) => {
+              const newCategory = event.target.value;
+              onFieldChange('category', newCategory);
+              
+              // Auto-set priority based on category
+              let newPriority = 'LOW'; // Default
+              if (newCategory === 'IT_TECHNICAL' || newCategory === 'IT_EQUIPMENT') {
+                newPriority = 'HIGH';
+              } else if (newCategory === 'MAINTENANCE') {
+                newPriority = 'HIGH';
+              } else if (newCategory === 'SAFETY_SECURITY') {
+                newPriority = 'CRITICAL';
+              } else if (newCategory === 'FACILITY_RESOURCE_BASED' || newCategory === 'GENERAL') {
+                newPriority = 'LOW';
+              }
+              onFieldChange('priority', newPriority);
+            }}
             required
           >
             <option value="">-- Select category --</option>
@@ -108,12 +124,15 @@ function TicketForm({
         </div>
 
         <div className="form-field">
-          <label htmlFor="priority">Priority *</label>
+          <label htmlFor="priority">Priority (Auto-set based on Category) *</label>
           <select
             id="priority"
             value={formData.priority}
             onChange={(event) => onFieldChange('priority', event.target.value)}
             required
+            disabled
+            className="disabled-select"
+            title="Priority is automatically set based on the selected category"
           >
             <option value="">-- Select priority --</option>
             {PRIORITY_OPTIONS.map((option) => (

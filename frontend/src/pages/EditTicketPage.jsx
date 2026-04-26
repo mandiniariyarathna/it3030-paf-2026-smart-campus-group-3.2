@@ -20,7 +20,7 @@ const defaultForm = {
   location: '',
   category: 'GENERAL',
   description: '',
-  priority: 'MEDIUM',
+  priority: 'LOW',
   contactDetails: '',
 };
 
