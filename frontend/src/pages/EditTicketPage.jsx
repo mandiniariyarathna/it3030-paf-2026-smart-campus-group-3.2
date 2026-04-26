@@ -5,21 +5,14 @@ import TicketForm from '../components/TicketForm';
 import { getResources } from '../services/resourceService';
 import { getTicketById, updateTicket } from '../services/ticketService';
 
+// Reverse mapping for loading existing tickets
 const CATEGORY_FROM_PERSISTED_VALUE = {
-  STRUCTURAL: 'MAINTENANCE',
+  STRUCTURAL: 'FACILITY_RESOURCE_BASED',
   IT_EQUIPMENT: 'IT_TECHNICAL',
-  OTHER: 'GENERAL',
-  ELECTRICAL: 'GENERAL',
+  ELECTRICAL: 'MAINTENANCE',
   PLUMBING: 'MAINTENANCE',
   HVAC: 'MAINTENANCE',
-};
-
-const CATEGORY_TO_PERSISTED_VALUE = {
-  MAINTENANCE: 'STRUCTURAL',
-  IT_TECHNICAL: 'IT_EQUIPMENT',
-  FACILITY_RESOURCE_BASED: 'STRUCTURAL',
-  SAFETY_SECURITY: 'OTHER',
-  GENERAL: 'OTHER',
+  OTHER: 'GENERAL',
 };
 
 const defaultForm = {
@@ -115,10 +108,9 @@ function EditTicketPage() {
     setIsSubmitting(true);
 
     try {
-      const persistedCategory = CATEGORY_TO_PERSISTED_VALUE[formData.category] || formData.category;
       const payload = {
         location: formData.location.trim(),
-        category: persistedCategory,
+        category: formData.category,
         description: formData.description.trim(),
         priority: formData.priority,
         contactDetails: formData.contactDetails.trim(),

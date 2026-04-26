@@ -14,14 +14,6 @@ const defaultForm = {
   contactDetails: '',
 };
 
-const CATEGORY_TO_PERSISTED_VALUE = {
-  MAINTENANCE: 'STRUCTURAL',
-  IT_TECHNICAL: 'IT_EQUIPMENT',
-  FACILITY_RESOURCE_BASED: 'STRUCTURAL',
-  SAFETY_SECURITY: 'OTHER',
-  GENERAL: 'OTHER',
-};
-
 function CreateTicketPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState(defaultForm);
@@ -73,10 +65,8 @@ function CreateTicketPage() {
     setIsSubmitting(true);
 
     try {
-      const persistedCategory = CATEGORY_TO_PERSISTED_VALUE[formData.category] || formData.category;
       const payload = {
         ...formData,
-        category: persistedCategory,
         location: formData.location.trim(),
         description: formData.description.trim(),
         contactDetails: formData.contactDetails.trim(),

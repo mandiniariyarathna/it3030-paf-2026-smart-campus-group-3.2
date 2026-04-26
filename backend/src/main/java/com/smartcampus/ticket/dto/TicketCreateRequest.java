@@ -23,8 +23,8 @@ public class TicketCreateRequest {
     @Size(max = 200, message = "Location cannot exceed 200 characters")
     private String location;
 
-    @NotNull(message = "Category is required")
-    private TicketCategory category;
+    @NotBlank(message = "Category is required")
+    private String category;
 
     @NotBlank(message = "Description is required")
     @Size(max = 2000, message = "Description cannot exceed 2000 characters")

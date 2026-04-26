@@ -68,11 +68,13 @@ public class TicketService {
         String resolvedReporterId = normalizeUserId(reporterId);
         List<TicketAttachment> savedAttachments = storeAttachments(attachments);
 
+        TicketCategory category = parseCategory(request.getCategory());
+
         Ticket ticket = Ticket.builder()
                 .reporterId(resolvedReporterId)
                 .resourceId(StringUtils.hasText(request.getResourceId()) ? request.getResourceId() : null)
                 .location(request.getLocation().trim())
-                .category(request.getCategory())
+                .category(category)
                 .description(request.getDescription().trim())
                 .priority(request.getPriority())
                 .status(TicketStatus.OPEN)
@@ -128,8 +130,10 @@ public class TicketService {
             throw new IllegalArgumentException("Only open tickets can be edited");
         }
 
+        TicketCategory category = parseCategory(request.getCategory());
+
         ticket.setLocation(request.getLocation().trim());
-        ticket.setCategory(request.getCategory());
+        ticket.setCategory(category);
         ticket.setDescription(request.getDescription().trim());
         ticket.setPriority(request.getPriority());
         ticket.setContactDetails(request.getContactDetails().trim());
@@ -402,6 +406,20 @@ public class TicketService {
         }
 
         return actorId.trim();
+    }
+
+    private TicketCategory parseCategory(String category) {
+        if (!StringUtils.hasText(category)) {
+            throw new IllegalArgumentException("Category is required");
+        }
+
+        String normalizedCategory = category.trim().toUpperCase();
+
+        try {
+            return TicketCategory.valueOf(normalizedCategory);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid category: " + category);
+        }
     }
 
     private boolean isTechnicianCompatibleWithCategory(TicketCategory category, Technician technician) {

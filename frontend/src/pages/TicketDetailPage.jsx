@@ -4,7 +4,9 @@ import { Link, useParams } from 'react-router-dom';
 import CommentSection from '../components/CommentSection';
 import PriorityBadge from '../components/PriorityBadge';
 import TicketStatusBadge from '../components/TicketStatusBadge';
-import { getTicketById } from '../services/ticketService';
+import { getCurrentActor, getTicketById, updateTicketStatus } from '../services/ticketService';
+import { getTechnicians } from '../services/technicianService';
+import { getCategoryLabel } from '../utils/categoryUtils';
 
 const STATUS_FLOW = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
@@ -33,6 +35,16 @@ function TicketDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [failedAttachmentIds, setFailedAttachmentIds] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  const currentActor = getCurrentActor();
+  const isTechnician = currentActor.role === 'TECHNICIAN';
+
+  const technicianNameById = useMemo(
+    () => new Map(technicians.map((technician) => [technician.id, technician.name])),
+    [technicians]
+  );
 
   useEffect(() => {
     const loadTicket = async () => {
@@ -54,6 +66,19 @@ function TicketDetailPage() {
     loadTicket();
   }, [ticketId]);
 
+  useEffect(() => {
+    const loadTechnicians = async () => {
+      try {
+        const data = await getTechnicians(true);
+        setTechnicians(data);
+      } catch (loadError) {
+        console.error('Failed to load technicians:', loadError);
+      }
+    };
+
+    loadTechnicians();
+  }, []);
+
   const timelineStatus = useMemo(() => {
     if (!ticket) {
       return [];
@@ -67,6 +92,27 @@ function TicketDetailPage() {
       active: ticket.status === status,
     }));
   }, [ticket]);
+
+  const handleStatusUpdate = async (status) => {
+    if (!ticket) return;
+    
+    setIsUpdatingStatus(true);
+    setError('');
+
+    try {
+      const payload = { status };
+      if (status === 'RESOLVED') {
+        payload.resolutionNote = 'Resolved by technician.';
+      }
+
+      const updated = await updateTicketStatus(ticketId, payload);
+      setTicket(updated);
+    } catch (statusError) {
+      setError(statusError.message || 'Failed to update ticket status.');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -127,7 +173,7 @@ function TicketDetailPage() {
             </div>
             <div>
               <dt>Category</dt>
-              <dd>{ticket.category}</dd>
+              <dd>{getCategoryLabel(ticket.category)}</dd>
             </div>
             <div>
               <dt>Contact</dt>
@@ -135,7 +181,7 @@ function TicketDetailPage() {
             </div>
             <div>
               <dt>Assigned Technician</dt>
-              <dd>{ticket.assignedTechnicianId || 'Unassigned'}</dd>
+              <dd>{technicianNameById.get(ticket.assignedTechnicianId) || ticket.assignedTechnicianId || 'Unassigned'}</dd>
             </div>
           </dl>
         </article>
@@ -180,6 +226,30 @@ function TicketDetailPage() {
           )}
         </article>
       </section>
+
+      {isTechnician && ticket && (
+        <section className="ticket-panel">
+          <h3>Update Status</h3>
+          <div className="ticket-actions-row">
+            <button
+              type="button"
+              className="ticket-btn ticket-btn-primary"
+              onClick={() => handleStatusUpdate('RESOLVED')}
+              disabled={isUpdatingStatus || ['RESOLVED', 'CLOSED'].includes(ticket.status)}
+            >
+              {isUpdatingStatus ? 'Updating...' : 'Resolved'}
+            </button>
+            <button
+              type="button"
+              className="ticket-btn ticket-btn-secondary"
+              onClick={() => handleStatusUpdate('CLOSED')}
+              disabled={isUpdatingStatus || ticket.status === 'CLOSED'}
+            >
+              {isUpdatingStatus ? 'Updating...' : 'Closed'}
+            </button>
+          </div>
+        </section>
+      )}
 
       <CommentSection
         ticketId={ticket.id}

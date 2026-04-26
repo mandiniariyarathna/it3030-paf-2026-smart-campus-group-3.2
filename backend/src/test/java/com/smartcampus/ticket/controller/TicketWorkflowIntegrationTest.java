@@ -55,7 +55,7 @@ class TicketWorkflowIntegrationTest {
     void shouldCreateTicketWithMultipartPayload() throws Exception {
         TicketCreateRequest request = TicketCreateRequest.builder()
                 .location("Main Hall")
-                .category(TicketCategory.ELECTRICAL)
+                .category(TicketCategory.ELECTRICAL.name())
                 .description("Main panel sparks")
                 .priority(TicketPriority.CRITICAL)
                 .contactDetails("admin@campus.com")

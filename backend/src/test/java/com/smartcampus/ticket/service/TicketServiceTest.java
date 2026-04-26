@@ -59,7 +59,7 @@ class TicketServiceTest {
     void shouldCreateTicketWithOpenStatus() {
         TicketCreateRequest request = TicketCreateRequest.builder()
                 .location("Engineering Block")
-                .category(TicketCategory.ELECTRICAL)
+                                .category(TicketCategory.ELECTRICAL.name())
                 .description("Ceiling light is flickering")
                 .priority(TicketPriority.HIGH)
                 .contactDetails("0771234567")
@@ -215,7 +215,7 @@ class TicketServiceTest {
 
         TicketUpdateRequest request = TicketUpdateRequest.builder()
                 .location("Engineering Building")
-                .category(TicketCategory.ELECTRICAL)
+                .category(TicketCategory.ELECTRICAL.name())
                 .description("Power outlet failure")
                 .priority(TicketPriority.HIGH)
                 .contactDetails("0771234567")
@@ -250,7 +250,7 @@ class TicketServiceTest {
 
         TicketUpdateRequest request = TicketUpdateRequest.builder()
                 .location("Updated Lab")
-                .category(TicketCategory.IT_EQUIPMENT)
+                .category(TicketCategory.IT_EQUIPMENT.name())
                 .description("Updated issue")
                 .priority(TicketPriority.HIGH)
                 .contactDetails("0779999999")

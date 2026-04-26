@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import PriorityBadge from '../components/PriorityBadge';
 import TicketStatusBadge from '../components/TicketStatusBadge';
 import { getCurrentActor, getTickets, deleteTicket } from '../services/ticketService';
+import { getCategoryLabel } from '../utils/categoryUtils';
 
 const CATEGORY_OPTIONS = [
   { value: 'MAINTENANCE', label: 'Maintenance' },
@@ -108,7 +109,7 @@ function MyTicketsPage() {
                 <div className="ticket-list-main">
                   <h3>{ticket.location}</h3>
                   <p>{ticket.description}</p>
-                  <small>Category: {ticket.category}</small>
+                  <small>Category: {getCategoryLabel(ticket.category)}</small>
                 </div>
 
                 <div className="ticket-list-meta">

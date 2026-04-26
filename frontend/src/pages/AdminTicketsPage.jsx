@@ -5,6 +5,7 @@ import PriorityBadge from '../components/PriorityBadge';
 import TicketStatusBadge from '../components/TicketStatusBadge';
 import { assignTechnician, getTickets, updateTicketStatus } from '../services/ticketService';
 import { getTechnicians } from '../services/technicianService';
+import { getCategoryLabel } from '../utils/categoryUtils';
 
 const defaultFilters = {
   status: '',
@@ -13,36 +14,19 @@ const defaultFilters = {
 };
 
 const CATEGORY_SPECIALIZATION_MAP = {
-  MAINTENANCE: ['Maintenance', 'Electrical'],
-  IT_TECHNICAL: ['Network', 'Hardware', 'Software'],
-  FACILITY_RESOURCE_BASED: ['Maintenance', 'Electrical'],
-  SAFETY_SECURITY: ['Maintenance', 'Electrical'],
-  GENERAL: ['Maintenance', 'Electrical', 'Network', 'Hardware', 'Software'],
-  ELECTRICAL: ['Electrical'],
+  MAINTENANCE: ['Maintenance'],
+  IT_TECHNICAL: ['IT & Technical'],
+  FACILITY_RESOURCE_BASED: ['Facility / Resource-Based'],
+  SAFETY_SECURITY: ['Safety & Security'],
+  GENERAL: ['General'],
+  // Legacy categories for backward compatibility
+  ELECTRICAL: ['Maintenance'],
   PLUMBING: ['Maintenance'],
-  IT_EQUIPMENT: ['Network', 'Hardware', 'Software'],
+  IT_EQUIPMENT: ['IT & Technical'],
   HVAC: ['Maintenance'],
   STRUCTURAL: ['Maintenance'],
-  OTHER: ['Maintenance', 'Electrical', 'Network', 'Hardware', 'Software'],
+  OTHER: ['General'],
 };
-
-const CATEGORY_LABEL_MAP = {
-  MAINTENANCE: 'Maintenance',
-  IT_TECHNICAL: 'IT & Technical',
-  FACILITY_RESOURCE_BASED: 'Facility / Resource-Based',
-  SAFETY_SECURITY: 'Safety & Security',
-  GENERAL: 'General',
-  ELECTRICAL: 'Electrical',
-  PLUMBING: 'Plumbing',
-  IT_EQUIPMENT: 'IT Equipment',
-  HVAC: 'HVAC',
-  STRUCTURAL: 'Structural',
-  OTHER: 'Other',
-};
-
-function getCategoryLabel(category) {
-  return CATEGORY_LABEL_MAP[category] || category;
-}
 
 function getTechnicianOptionsForCategory(category, technicians) {
   const allowedSpecializations = CATEGORY_SPECIALIZATION_MAP[category] || [];
@@ -214,7 +198,7 @@ function AdminTicketsPage() {
                         <select
                           value={ticket.assignedTechnicianId || ''}
                           onChange={(e) => handleAssign(ticket.id, e.target.value)}
-                          disabled={ticket.status === 'REJECTED'}
+                          disabled={ticket.status !== 'OPEN'}
                           className="ghost-btn"
                         >
                           <option value="">Select Technician</option>

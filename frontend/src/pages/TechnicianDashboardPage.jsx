@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import PriorityBadge from '../components/PriorityBadge';
 import TicketStatusBadge from '../components/TicketStatusBadge';
 import { getTickets } from '../services/ticketService';
+import { getCategoryLabel } from '../utils/categoryUtils';
 
 function TechnicianDashboardPage() {
   const navigate = useNavigate();
@@ -97,7 +98,7 @@ function TechnicianDashboardPage() {
                 </div>
               </header>
               <p>{ticket.description}</p>
-              <small>Category: {ticket.category}</small>
+              <small>Category: {getCategoryLabel(ticket.category)}</small>
               <Link to={`/tickets/${ticket.id}`} className="ticket-link-inline">
                 View Details
               </Link>
