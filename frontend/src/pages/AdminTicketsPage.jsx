@@ -13,6 +13,11 @@ const defaultFilters = {
 };
 
 const CATEGORY_SPECIALIZATION_MAP = {
+  MAINTENANCE: ['Maintenance', 'Electrical'],
+  IT_TECHNICAL: ['Network', 'Hardware', 'Software'],
+  FACILITY_RESOURCE_BASED: ['Maintenance', 'Electrical'],
+  SAFETY_SECURITY: ['Maintenance', 'Electrical'],
+  GENERAL: ['Maintenance', 'Electrical', 'Network', 'Hardware', 'Software'],
   ELECTRICAL: ['Electrical'],
   PLUMBING: ['Maintenance'],
   IT_EQUIPMENT: ['Network', 'Hardware', 'Software'],
@@ -21,15 +26,29 @@ const CATEGORY_SPECIALIZATION_MAP = {
   OTHER: ['Maintenance', 'Electrical', 'Network', 'Hardware', 'Software'],
 };
 
-function getTechnicianOptionsForCategory(category, technicians, assignedTechnicianId) {
+const CATEGORY_LABEL_MAP = {
+  MAINTENANCE: 'Maintenance',
+  IT_TECHNICAL: 'IT & Technical',
+  FACILITY_RESOURCE_BASED: 'Facility / Resource-Based',
+  SAFETY_SECURITY: 'Safety & Security',
+  GENERAL: 'General',
+  ELECTRICAL: 'Electrical',
+  PLUMBING: 'Plumbing',
+  IT_EQUIPMENT: 'IT Equipment',
+  HVAC: 'HVAC',
+  STRUCTURAL: 'Structural',
+  OTHER: 'Other',
+};
+
+function getCategoryLabel(category) {
+  return CATEGORY_LABEL_MAP[category] || category;
+}
+
+function getTechnicianOptionsForCategory(category, technicians) {
   const allowedSpecializations = CATEGORY_SPECIALIZATION_MAP[category] || [];
   const normalizedAllowedSpecializations = allowedSpecializations.map((specialization) => specialization.toLowerCase());
 
   return technicians.filter((technician) => {
-    if (technician.id === assignedTechnicianId) {
-      return true;
-    }
-
     const specialization = (technician.specialization || '').trim().toLowerCase();
     return normalizedAllowedSpecializations.includes(specialization);
   });
@@ -146,12 +165,11 @@ function AdminTicketsPage() {
         </select>
         <select value={filters.category} onChange={(event) => setFilters((previous) => ({ ...previous, category: event.target.value }))}>
           <option value="">All Categories</option>
-          <option value="ELECTRICAL">Electrical</option>
-          <option value="PLUMBING">Plumbing</option>
-          <option value="IT_EQUIPMENT">IT Equipment</option>
-          <option value="HVAC">HVAC</option>
-          <option value="STRUCTURAL">Structural</option>
-          <option value="OTHER">Other</option>
+          <option value="MAINTENANCE">Maintenance</option>
+          <option value="IT_TECHNICAL">IT &amp; Technical</option>
+          <option value="FACILITY_RESOURCE_BASED">Facility / Resource-Based</option>
+          <option value="SAFETY_SECURITY">Safety &amp; Security</option>
+          <option value="GENERAL">General</option>
         </select>
       </section>
 
@@ -182,7 +200,7 @@ function AdminTicketsPage() {
                         {ticket.location}
                       </Link>
                     </td>
-                    <td>{ticket.category}</td>
+                    <td>{getCategoryLabel(ticket.category)}</td>
                     <td>{ticket.reporterId}</td>
                     <td>
                       <TicketStatusBadge status={ticket.status} />
@@ -200,7 +218,7 @@ function AdminTicketsPage() {
                           className="ghost-btn"
                         >
                           <option value="">Select Technician</option>
-                          {getTechnicianOptionsForCategory(ticket.category, technicians, ticket.assignedTechnicianId).map((tech) => (
+                          {getTechnicianOptionsForCategory(ticket.category, technicians).map((tech) => (
                             <option key={tech.id} value={tech.id}>
                               {tech.name} ({tech.specialization || 'General'})
                             </option>

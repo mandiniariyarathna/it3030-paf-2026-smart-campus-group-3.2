@@ -22,6 +22,7 @@ import com.smartcampus.ticket.dto.TicketAssignmentRequest;
 import com.smartcampus.ticket.dto.TicketCreateRequest;
 import com.smartcampus.ticket.dto.TicketResponse;
 import com.smartcampus.ticket.dto.TicketStatusUpdateRequest;
+import com.smartcampus.ticket.dto.TicketUpdateRequest;
 import com.smartcampus.ticket.model.TicketCategory;
 import com.smartcampus.ticket.model.TicketPriority;
 import com.smartcampus.ticket.model.TicketStatus;
@@ -86,6 +87,19 @@ public class TicketController {
         return ResponseEntity.ok(buildResponse(data, "Ticket fetched successfully"));
     }
 
+    @PutMapping("/{ticketId}")
+    @Operation(summary = "Edit ticket", description = "Update core ticket details while ticket is open")
+    @ApiResponse(responseCode = "200", description = "Ticket updated successfully")
+    public ResponseEntity<Map<String, Object>> updateTicket(
+            @PathVariable String ticketId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @Valid @org.springframework.web.bind.annotation.RequestBody TicketUpdateRequest request) {
+
+        TicketResponse data = ticketService.updateTicket(ticketId, userId, userRole, request);
+        return ResponseEntity.ok(buildResponse(data, "Ticket updated successfully"));
+    }
+
     @PutMapping("/{ticketId}/status")
     @Operation(summary = "Update ticket status", description = "Update ticket status with transition validation")
     @ApiResponse(responseCode = "200", description = "Ticket status updated successfully")
@@ -111,14 +125,15 @@ public class TicketController {
     }
 
     @DeleteMapping("/{ticketId}")
-    @Operation(summary = "Close ticket", description = "Soft delete endpoint that closes a ticket (admin only)")
-    @ApiResponse(responseCode = "200", description = "Ticket closed successfully")
-    public ResponseEntity<Map<String, Object>> closeTicket(
+    @Operation(summary = "Delete ticket", description = "Permanently delete a ticket (ticket owner or admin only)")
+    @ApiResponse(responseCode = "200", description = "Ticket deleted successfully")
+    public ResponseEntity<Map<String, Object>> deleteTicket(
             @PathVariable String ticketId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
 
-        TicketResponse data = ticketService.softDeleteTicket(ticketId, userRole);
-        return ResponseEntity.ok(buildResponse(data, "Ticket closed successfully"));
+        ticketService.deleteTicket(ticketId, userId, userRole);
+        return ResponseEntity.ok(buildResponse(null, "Ticket deleted successfully"));
     }
 
     private Map<String, Object> buildResponse(Object data, String message) {

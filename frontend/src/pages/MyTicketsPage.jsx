@@ -3,7 +3,21 @@ import { Link } from 'react-router-dom';
 
 import PriorityBadge from '../components/PriorityBadge';
 import TicketStatusBadge from '../components/TicketStatusBadge';
-import { getCurrentActor, getTickets } from '../services/ticketService';
+import { getCurrentActor, getTickets, deleteTicket } from '../services/ticketService';
+
+const CATEGORY_OPTIONS = [
+  { value: 'MAINTENANCE', label: 'Maintenance' },
+  { value: 'IT_TECHNICAL', label: 'IT & Technical' },
+  { value: 'FACILITY_RESOURCE_BASED', label: 'Facility / Resource-Based' },
+  { value: 'SAFETY_SECURITY', label: 'Safety & Security' },
+  { value: 'GENERAL', label: 'General' },
+  { value: 'ELECTRICAL', label: 'Electrical (Legacy)' },
+  { value: 'PLUMBING', label: 'Plumbing (Legacy)' },
+  { value: 'IT_EQUIPMENT', label: 'IT Equipment (Legacy)' },
+  { value: 'HVAC', label: 'HVAC (Legacy)' },
+  { value: 'STRUCTURAL', label: 'Structural (Legacy)' },
+  { value: 'OTHER', label: 'Other (Legacy)' },
+];
 
 function MyTicketsPage() {
   const [tickets, setTickets] = useState([]);
@@ -36,6 +50,19 @@ function MyTicketsPage() {
     const resolved = tickets.filter((ticket) => ticket.status === 'RESOLVED').length;
     return { total, open, resolved };
   }, [tickets]);
+
+  const handleDelete = async (ticketId) => {
+    if (!window.confirm('Are you sure you want to permanently delete this ticket?')) {
+      return;
+    }
+
+    try {
+      await deleteTicket(ticketId);
+      setTickets(tickets.filter((ticket) => ticket.id !== ticketId));
+    } catch (error) {
+      alert(error.message || 'Failed to delete ticket.');
+    }
+  };
 
   return (
     <main className="ticket-page">
@@ -77,7 +104,7 @@ function MyTicketsPage() {
         <ul className="ticket-list" aria-label="My tickets">
           {tickets.map((ticket) => (
             <li key={ticket.id} className="ticket-list-item">
-              <Link to={`/tickets/${ticket.id}`} className="ticket-list-link">
+              <div className="ticket-list-link">
                 <div className="ticket-list-main">
                   <h3>{ticket.location}</h3>
                   <p>{ticket.description}</p>
@@ -89,8 +116,26 @@ function MyTicketsPage() {
                     <TicketStatusBadge status={ticket.status} />
                     <PriorityBadge priority={ticket.priority} />
                   </div>
+                  <div className="ticket-ticket-actions">
+                    <Link to={`/tickets/${ticket.id}`} className="ticket-list-action">
+                      View Details
+                    </Link>
+                    {!isTechnician && ticket.status === 'OPEN' ? (
+                      <>
+                        <Link to={`/tickets/${ticket.id}/edit`} className="ticket-edit-btn-link">
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(ticket.id)}
+                          className="ticket-delete-btn"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
-              </Link>
+              </div>
             </li>
           ))}
         </ul>

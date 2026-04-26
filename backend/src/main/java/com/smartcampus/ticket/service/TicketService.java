@@ -30,6 +30,7 @@ import com.smartcampus.ticket.dto.TicketCommentUpdateRequest;
 import com.smartcampus.ticket.dto.TicketCreateRequest;
 import com.smartcampus.ticket.dto.TicketResponse;
 import com.smartcampus.ticket.dto.TicketStatusUpdateRequest;
+import com.smartcampus.ticket.dto.TicketUpdateRequest;
 import com.smartcampus.ticket.model.Ticket;
 import com.smartcampus.ticket.model.TicketAttachment;
 import com.smartcampus.ticket.model.TicketCategory;
@@ -37,6 +38,9 @@ import com.smartcampus.ticket.model.TicketComment;
 import com.smartcampus.ticket.model.TicketPriority;
 import com.smartcampus.ticket.model.TicketStatus;
 import com.smartcampus.ticket.repository.TicketRepository;
+import com.smartcampus.technician.model.Technician;
+import com.smartcampus.technician.model.TechnicianStatus;
+import com.smartcampus.technician.repository.TechnicianRepository;
 
 @Service
 public class TicketService {
@@ -51,10 +55,13 @@ public class TicketService {
 
     private final TicketRepository ticketRepository;
     private final MongoTemplate mongoTemplate;
+    private final TechnicianRepository technicianRepository;
 
-    public TicketService(TicketRepository ticketRepository, MongoTemplate mongoTemplate) {
+    public TicketService(TicketRepository ticketRepository, MongoTemplate mongoTemplate,
+            TechnicianRepository technicianRepository) {
         this.ticketRepository = ticketRepository;
         this.mongoTemplate = mongoTemplate;
+        this.technicianRepository = technicianRepository;
     }
 
     public TicketResponse createTicket(String reporterId, TicketCreateRequest request, List<MultipartFile> attachments) {
@@ -106,6 +113,30 @@ public class TicketService {
         return toResponse(ticket);
     }
 
+    public TicketResponse updateTicket(String ticketId, String actorId, String actorRole, TicketUpdateRequest request) {
+        Ticket ticket = findTicket(ticketId);
+
+        String normalizedRole = normalizeRole(actorRole);
+        String normalizedActorId = normalizeUserId(actorId);
+        boolean isOwner = normalizedActorId.equals(ticket.getReporterId());
+
+        if (!isOwner && !ROLE_ADMIN.equals(normalizedRole)) {
+            throw new ForbiddenOperationException("You can only edit your own tickets");
+        }
+
+        if (ticket.getStatus() != TicketStatus.OPEN) {
+            throw new IllegalArgumentException("Only open tickets can be edited");
+        }
+
+        ticket.setLocation(request.getLocation().trim());
+        ticket.setCategory(request.getCategory());
+        ticket.setDescription(request.getDescription().trim());
+        ticket.setPriority(request.getPriority());
+        ticket.setContactDetails(request.getContactDetails().trim());
+
+        return toResponse(ticketRepository.save(ticket));
+    }
+
     public TicketResponse updateStatus(String ticketId, String actorRole, TicketStatusUpdateRequest request) {
         String normalizedRole = normalizeRole(actorRole);
         if (!ROLE_ADMIN.equals(normalizedRole) && !ROLE_TECHNICIAN.equals(normalizedRole)) {
@@ -139,7 +170,20 @@ public class TicketService {
         }
 
         Ticket ticket = findTicket(ticketId);
-        ticket.setAssignedTechnicianId(request.getTechnicianId().trim());
+        String technicianId = request.getTechnicianId().trim();
+        Technician technician = technicianRepository.findById(technicianId)
+                .orElseThrow(() -> new ResourceNotFoundException("Technician not found: " + technicianId));
+
+        if (technician.getStatus() != TechnicianStatus.ACTIVE) {
+            throw new IllegalArgumentException("Only active technicians can be assigned");
+        }
+
+        if (!isTechnicianCompatibleWithCategory(ticket.getCategory(), technician)) {
+            throw new IllegalArgumentException("Technician " + technician.getName()
+                    + " cannot be assigned to a " + ticket.getCategory() + " ticket");
+        }
+
+        ticket.setAssignedTechnicianId(technicianId);
         ticket.setAssignedAt(LocalDateTime.now());
 
         if (ticket.getStatus() == TicketStatus.OPEN) {
@@ -149,16 +193,21 @@ public class TicketService {
         return toResponse(ticketRepository.save(ticket));
     }
 
-    public TicketResponse softDeleteTicket(String ticketId, String actorRole) {
-        if (!ROLE_ADMIN.equals(normalizeRole(actorRole))) {
-            throw new ForbiddenOperationException("Only admin can close tickets from delete endpoint");
+    public void deleteTicket(String ticketId, String actorId, String actorRole) {
+        Ticket ticket = findTicket(ticketId);
+        String normalizedRole = normalizeRole(actorRole);
+        String normalizedActorId = normalizeUserId(actorId);
+        boolean isOwner = normalizedActorId.equals(ticket.getReporterId());
+
+        if (!isOwner && !ROLE_ADMIN.equals(normalizedRole)) {
+            throw new ForbiddenOperationException("You can only delete your own tickets");
         }
 
-        Ticket ticket = findTicket(ticketId);
-        ticket.setStatus(TicketStatus.CLOSED);
-        ticket.setClosedAt(LocalDateTime.now());
+        if (ticket.getStatus() != TicketStatus.OPEN) {
+            throw new IllegalArgumentException("Only open tickets can be deleted");
+        }
 
-        return toResponse(ticketRepository.save(ticket));
+        ticketRepository.deleteById(ticketId);
     }
 
     public TicketResponse addComment(String ticketId, String actorId, String actorRole, TicketCommentCreateRequest request) {
@@ -353,6 +402,29 @@ public class TicketService {
         }
 
         return actorId.trim();
+    }
+
+    private boolean isTechnicianCompatibleWithCategory(TicketCategory category, Technician technician) {
+        if (category == null || technician == null) {
+            return false;
+        }
+
+        String specialization = technician.getSpecialization() == null ? "" : technician.getSpecialization().trim().toLowerCase();
+
+        return switch (category) {
+            case MAINTENANCE, FACILITY_RESOURCE_BASED, SAFETY_SECURITY -> specialization.equals("maintenance")
+                || specialization.equals("electrical");
+            case IT_TECHNICAL -> specialization.equals("network")
+                || specialization.equals("hardware")
+                || specialization.equals("software");
+            case GENERAL -> true;
+            case ELECTRICAL -> specialization.equals("electrical");
+            case PLUMBING, HVAC, STRUCTURAL -> specialization.equals("maintenance");
+            case IT_EQUIPMENT -> specialization.equals("network")
+                    || specialization.equals("hardware")
+                    || specialization.equals("software");
+            case OTHER -> true;
+        };
     }
 
     private TicketResponse toResponse(Ticket ticket) {

@@ -45,12 +45,20 @@ function createFallbackUserId(session) {
     return null;
   }
 
-  if (session.username) {
-    return session.username;
+  if (session.actorId) {
+    return session.actorId;
+  }
+
+  if (session.technicianId) {
+    return session.technicianId;
   }
 
   if (session.email) {
     return session.email;
+  }
+
+  if (session.username) {
+    return session.username;
   }
 
   return null;
@@ -166,6 +174,20 @@ export async function getTicketById(ticketId) {
   return data?.data;
 }
 
+export async function updateTicket(ticketId, payload) {
+  const response = await fetch(`${API_BASE_URL}${TICKET_ENDPOINT}/${ticketId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...buildActorHeaders(true),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await parseResponse(response, 'Unable to update ticket.');
+  return data?.data;
+}
+
 export async function updateTicketStatus(ticketId, payload) {
   const response = await fetch(`${API_BASE_URL}${TICKET_ENDPOINT}/${ticketId}/status`, {
     method: 'PUT',
@@ -194,16 +216,16 @@ export async function assignTechnician(ticketId, technicianId) {
   return data?.data;
 }
 
-export async function closeTicket(ticketId) {
+export async function deleteTicket(ticketId) {
   const response = await fetch(`${API_BASE_URL}${TICKET_ENDPOINT}/${ticketId}`, {
     method: 'DELETE',
     headers: {
-      ...buildActorHeaders(false),
+      ...buildActorHeaders(true),
     },
   });
 
-  const data = await parseResponse(response, 'Unable to close ticket.');
-  return data?.data;
+  const data = await parseResponse(response, 'Unable to delete ticket.');
+  return data;
 }
 
 export async function addComment(ticketId, payload) {

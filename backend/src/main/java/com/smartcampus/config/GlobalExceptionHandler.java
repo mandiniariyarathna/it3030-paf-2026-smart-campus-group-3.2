@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -48,6 +49,13 @@ public class GlobalExceptionHandler {
         Map<String, String> response = new HashMap<>();
         response.put("message", "Invalid value provided for: " + exception.getName());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> handleMissingResource(NoResourceFoundException exception) {
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Requested resource was not found");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

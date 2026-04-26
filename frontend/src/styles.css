@@ -1069,21 +1069,30 @@ body {
   overflow: hidden;
 }
 
-.ticket-list-link {
+.ticket-list-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: stretch;
+  padding: 0.82rem;
+}
+
+.ticket-card-link {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   align-items: flex-start;
-  padding: 0.82rem;
   color: inherit;
   text-decoration: none;
+  flex: 1;
+  min-width: 0;
 }
 
-.ticket-list-link:hover {
+.ticket-card-link:hover {
   background: #edf5f9;
 }
 
-.ticket-list-link:focus-visible {
+.ticket-card-link:focus-visible {
   outline: 3px solid rgba(23, 143, 136, 0.35);
   outline-offset: -3px;
 }
@@ -1114,6 +1123,103 @@ body {
 .ticket-list-action {
   color: #0f7e77;
   font-weight: 700;
+}
+
+.ticket-edit-btn-link {
+  color: #0f7e77;
+  font-weight: 700;
+  border: 1px solid #8fcfc9;
+  background: #f0fbfa;
+  border-radius: 999px;
+  padding: 0.22rem 0.72rem;
+  text-decoration: none;
+}
+
+.ticket-edit-btn-link:hover {
+  background: #e1f5f3;
+}
+
+.ticket-ticket-actions {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.82rem 0.82rem 0.82rem 0;
+}
+
+.ticket-edit-btn {
+  border: 1px solid #89c8c2;
+  background: #e9f7f5;
+  color: #0f7e77;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+}
+
+.ticket-edit-btn:hover {
+  background: #dcf2ef;
+}
+
+.ticket-delete-btn {
+  border: 1px solid #e57373;
+  background: #ffebee;
+  color: #c62828;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.ticket-delete-btn:hover {
+  background: #ffcdd2;
+}
+
+.ticket-inline-edit {
+  padding: 0.82rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ticket-inline-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ticket-inline-grid label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  color: #33546d;
+  font-weight: 600;
+}
+
+.ticket-inline-grid input,
+.ticket-inline-grid select,
+.ticket-inline-grid textarea {
+  border-radius: 10px;
+  border: 1px solid #c7d7e4;
+  background: #fcfeff;
+  color: #123750;
+  padding: 0.58rem 0.65rem;
+  font: inherit;
+}
+
+.ticket-inline-grid-full {
+  grid-column: 1 / -1;
+}
+
+.ticket-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ticket-inline-error {
+  margin: 0;
 }
 
 .ticket-list-card {
@@ -1446,6 +1552,202 @@ body {
   color: #39556e;
 }
 
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: min(600px, 100%);
+  background: var(--white);
+  border-radius: 24px;
+  box-shadow: 0 25px 50px rgba(15, 34, 64, 0.3), var(--shadow-xl);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-header {
+  padding: 1.5rem 1.8rem 1rem;
+  border-bottom: 1px solid #e8eff5;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  font-size: 1.65rem;
+  color: #0a2745;
+}
+
+.modal-description {
+  margin: 0.5rem 0 0;
+  color: #5a738a;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1rem 1.8rem;
+  border-top: 1px solid #e8eff5;
+}
+
+.modal-actions button {
+  min-width: 120px;
+}
+
+/* Form Sections */
+.technician-form {
+  padding: 0 1.8rem 1.5rem;
+}
+
+.form-section {
+  margin-top: 1.5rem;
+  padding-bottom: 1.2rem;
+  border-bottom: 1px solid #e8eff5;
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 1rem;
+}
+
+.form-section-info {
+  border: none;
+  background: #f0f8f7;
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  margin-top: 1rem;
+}
+
+.form-section-title {
+  margin: 0 0 1rem;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  font-size: 1.1rem;
+  color: #0d3656;
+  font-weight: 700;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.form-field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.form-field label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a3a4a;
+}
+
+.form-field input,
+.form-field select {
+  width: 100%;
+  border: 1px solid #c7d5e0;
+  border-radius: 14px;
+  padding: 0.85rem 0.95rem;
+  font: inherit;
+  background: #f5f9fc;
+  color: #0d2340;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.form-field input::placeholder {
+  color: #7d8ea5;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: #16948b;
+  background: #fafcfd;
+  box-shadow: 0 0 0 4px rgba(22, 148, 139, 0.15);
+}
+
+.form-error-banner {
+  margin: 1rem 1.8rem 0;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  background: #fde9e9;
+  color: #8f3030;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid #f5c5c5;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.form-error-banner::before {
+  content: '⚠';
+  font-size: 1.1rem;
+}
+
+.field-help {
+  margin: 0;
+  color: #66788f;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+/* Responsive Form Grid */
+@media (max-width: 768px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-content {
+    width: 100%;
+    border-radius: 20px;
+  }
+
+  .modal-header {
+    padding: 1.2rem 1.5rem 0.8rem;
+  }
+
+  .modal-header h2 {
+    font-size: 1.4rem;
+  }
+
+  .modal-actions,
+  .technician-form {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  .modal-actions {
+    padding-top: 0.8rem;
+    padding-bottom: 1.2rem;
+  }
+}
+
 @media (max-width: 960px) {
   .auth-card {
     grid-template-columns: 1fr;
@@ -1498,8 +1800,17 @@ body {
     justify-items: start;
   }
 
-  .ticket-list-link {
+  .ticket-ticket-actions {
+    flex-wrap: wrap;
+  }
+
+  .ticket-list-row,
+  .ticket-card-link {
     flex-direction: column;
+  }
+
+  .ticket-inline-grid {
+    grid-template-columns: 1fr;
   }
 }
 

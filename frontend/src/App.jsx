@@ -5,6 +5,7 @@ import { loginTechnician } from './services/technicianService';
 import ResourcesPage from './pages/ResourcesPage';
 import ResourceDetailPage from './pages/ResourceDetailPage';
 import CreateTicketPage from './pages/CreateTicketPage';
+import EditTicketPage from './pages/EditTicketPage';
 import MyTicketsPage from './pages/MyTicketsPage';
 import AdminTicketsPage from './pages/AdminTicketsPage';
 import TicketDetailPage from './pages/TicketDetailPage';
@@ -96,6 +97,7 @@ function createSessionFromAccount(account) {
     displayName: account.displayName,
     email: account.email,
     username: account.username,
+    actorId: account.email || account.username,
   };
 }
 
@@ -355,6 +357,7 @@ function LoginPage() {
         displayName: 'Administrator',
         username: ADMIN_USERNAME,
         email: `${ADMIN_USERNAME}@smartcampus.local`,
+        actorId: `${ADMIN_USERNAME}@smartcampus.local`,
       };
 
       saveSession(adminSession);
@@ -393,6 +396,7 @@ function LoginPage() {
         displayName: technician.name,
         email: technician.email,
         technicianId: technician.id,
+        actorId: technician.id,
       };
 
       saveSession(technicianSession);
@@ -422,6 +426,7 @@ function LoginPage() {
         displayName,
         email: response.email || matchedAccount?.email || '',
         username: matchedAccount?.username || '',
+        actorId: response.email || matchedAccount?.email || matchedAccount?.username || '',
       });
 
       navigate('/home', {
@@ -956,6 +961,7 @@ function AdminLoginPage() {
       displayName: 'Administrator',
       username: ADMIN_USERNAME,
       email: `${ADMIN_USERNAME}@smartcampus.local`,
+      actorId: `${ADMIN_USERNAME}@smartcampus.local`,
     };
 
     saveSession(session);
@@ -1233,6 +1239,7 @@ function App() {
       <Route path="/admin/technicians" element={<TechniciansPage />} />
       <Route path="/technician" element={<TechnicianDashboardPage />} />
       <Route path="/tickets/create" element={<CreateTicketPage />} />
+          <Route path="/tickets/:ticketId/edit" element={<EditTicketPage />} />
       <Route path="/tickets/my" element={<MyTicketsPage />} />
       <Route path="/tickets/admin" element={<AdminTicketsPage />} />
       <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />

@@ -1,17 +1,25 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import ImageUploadPreview from '../components/ImageUploadPreview';
-import { createTicket } from '../services/ticketService';
+import TicketForm from '../components/TicketForm';
 import { getResources } from '../services/resourceService';
+import { createTicket } from '../services/ticketService';
 
 const defaultForm = {
   resourceId: '',
   location: '',
-  category: 'OTHER',
+  category: 'GENERAL',
   description: '',
   priority: 'MEDIUM',
   contactDetails: '',
+};
+
+const CATEGORY_TO_PERSISTED_VALUE = {
+  MAINTENANCE: 'STRUCTURAL',
+  IT_TECHNICAL: 'IT_EQUIPMENT',
+  FACILITY_RESOURCE_BASED: 'STRUCTURAL',
+  SAFETY_SECURITY: 'OTHER',
+  GENERAL: 'OTHER',
 };
 
 function CreateTicketPage() {
@@ -23,23 +31,23 @@ function CreateTicketPage() {
   const [resources, setResources] = useState([]);
   const [resourcesLoading, setResourcesLoading] = useState(true);
   const [resourcesError, setResourcesError] = useState('');
-  const [selectedResource, setSelectedResource] = useState(null);
 
-  // Load resources on component mount
   useEffect(() => {
     const loadResources = async () => {
       setResourcesLoading(true);
       setResourcesError('');
+
       try {
         const data = await getResources();
         setResources(data || []);
-      } catch (err) {
-        setResourcesError(err.message || 'Failed to load resources');
+      } catch (loadError) {
+        setResourcesError(loadError.message || 'Failed to load resources');
         setResources([]);
       } finally {
         setResourcesLoading(false);
       }
     };
+
     loadResources();
   }, []);
 
@@ -51,12 +59,10 @@ function CreateTicketPage() {
   };
 
   const handleResourceSelect = (resourceId) => {
-    const selected = resources.find((r) => r.id === resourceId);
-    setSelectedResource(selected || null);
+    const selected = resources.find((resource) => resource.id === resourceId);
     updateField('resourceId', resourceId);
-    
-    // Auto-populate location from selected resource
-    if (selected && selected.location) {
+
+    if (selected?.location) {
       updateField('location', selected.location);
     }
   };
@@ -67,8 +73,10 @@ function CreateTicketPage() {
     setIsSubmitting(true);
 
     try {
+      const persistedCategory = CATEGORY_TO_PERSISTED_VALUE[formData.category] || formData.category;
       const payload = {
         ...formData,
+        category: persistedCategory,
         location: formData.location.trim(),
         description: formData.description.trim(),
         contactDetails: formData.contactDetails.trim(),
@@ -85,129 +93,26 @@ function CreateTicketPage() {
   };
 
   return (
-    <main className="ticket-page">
-      <header className="ticket-page-head">
-        <div>
-          <p className="home-kicker">Maintenance & Incident Ticketing</p>
-          <h1>Create a New Ticket</h1>
-          <p>Report issues quickly with clear details and optional photo evidence.</p>
-        </div>
-        <Link to="/tickets/my" className="ghost-btn ticket-link-btn">
-          View My Tickets
-        </Link>
-      </header>
-
-      <form className="ticket-form" onSubmit={handleSubmit}>
-        <div className="form-field">
-          <label htmlFor="resource-select">Select Related Resource (Optional)</label>
-          <select
-            id="resource-select"
-            value={formData.resourceId}
-            onChange={(event) => handleResourceSelect(event.target.value)}
-            disabled={resourcesLoading}
-            className="resource-selector"
-          >
-            <option value="">-- Choose a resource --</option>
-            {resources.map((resource) => (
-              <option key={resource.id} value={resource.id}>
-                {resource.name} ({resource.type}) - {resource.location}
-              </option>
-            ))}
-          </select>
-          {resourcesError && <p className="field-error">{resourcesError}</p>}
-          {resourcesLoading && <p className="field-help">Loading resources...</p>}
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="location">Location *</label>
-          <input
-            id="location"
-            type="text"
-            value={formData.location}
-            onChange={(event) => updateField('location', event.target.value)}
-            placeholder="Enter ticket location"
-            required
-            maxLength={200}
-          />
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="category">Category *</label>
-          <select
-            id="category"
-            value={formData.category}
-            onChange={(event) => updateField('category', event.target.value)}
-            required
-          >
-            <option value="">-- Select category --</option>
-            <option value="ELECTRICAL">Electrical</option>
-            <option value="PLUMBING">Plumbing</option>
-            <option value="IT_EQUIPMENT">IT Equipment</option>
-            <option value="HVAC">HVAC</option>
-            <option value="STRUCTURAL">Structural</option>
-            <option value="OTHER">Other</option>
-          </select>
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="priority">Priority *</label>
-          <select
-            id="priority"
-            value={formData.priority}
-            onChange={(event) => updateField('priority', event.target.value)}
-            required
-          >
-            <option value="">-- Select priority --</option>
-            <option value="LOW">Low</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HIGH">High</option>
-            <option value="CRITICAL">Critical</option>
-          </select>
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="description">Description *</label>
-          <textarea
-            id="description"
-            value={formData.description}
-            onChange={(event) => updateField('description', event.target.value)}
-            placeholder="Describe the issue in detail..."
-            required
-            maxLength={2000}
-            rows={5}
-          />
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="contact-details">Contact Details *</label>
-          <input
-            id="contact-details"
-            type="text"
-            value={formData.contactDetails}
-            onChange={(event) => updateField('contactDetails', event.target.value)}
-            placeholder="Your email or phone number"
-            required
-            maxLength={255}
-          />
-        </div>
-
-        <div className="form-field">
-          <label>Attach Supporting Files (Max 3 images, 5MB each)</label>
-          <ImageUploadPreview files={files} onChange={setFiles} />
-        </div>
-
-        {error && <p className="field-error">{error}</p>}
-
-        <div className="form-actions">
-          <button type="submit" className="primary-btn" disabled={isSubmitting || resourcesLoading}>
-            {isSubmitting ? 'Creating Ticket...' : 'Submit Ticket'}
-          </button>
-          <Link to="/tickets/my" className="ghost-btn">
-            Cancel
-          </Link>
-        </div>
-      </form>
-    </main>
+    <TicketForm
+      heading="Create a New Ticket"
+      description="Report issues quickly with clear details and optional photo evidence."
+      backLink="/tickets/my"
+      backLinkLabel="View My Tickets"
+      formData={formData}
+      resources={resources}
+      resourcesLoading={resourcesLoading}
+      resourcesError={resourcesError}
+      onFieldChange={updateField}
+      onResourceSelect={handleResourceSelect}
+      onSubmit={handleSubmit}
+      submitLabel={isSubmitting ? 'Creating Ticket...' : 'Submit Ticket'}
+      isSubmitting={isSubmitting}
+      error={error}
+      files={files}
+      onFilesChange={setFiles}
+      includeAttachments={true}
+      showResourceSelector={true}
+    />
   );
 }
 

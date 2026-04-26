@@ -4,11 +4,11 @@ import { Link } from 'react-router-dom';
 import { createTechnician, deleteTechnician, getTechnicians, updateTechnician, updateTechnicianStatus } from '../services/technicianService';
 
 const SPECIALIZATION_OPTIONS = [
-  'Electrical',
-  'Network',
-  'Hardware',
-  'Software',
-  'Maintenance',
+  { value: 'MAINTENANCE', label: 'Maintenance' },
+  { value: 'IT_TECHNICAL', label: 'IT & Technical' },
+  { value: 'FACILITY_RESOURCE_BASED', label: 'Facility / Resource-Based' },
+  { value: 'SAFETY_SECURITY', label: 'Safety & Security' },
+  { value: 'GENERAL', label: 'General' },
 ];
 
 function TechniciansPage() {
@@ -94,6 +94,38 @@ function TechniciansPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
+    if (!formData.name.trim()) {
+      setError('Name is required');
+      return;
+    }
+    if (!formData.email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    if (!formData.phone.trim()) {
+      setError('Phone is required');
+      return;
+    }
+    if (!formData.specialization) {
+      setError('Specialization is required');
+      return;
+    }
+    if (!editingTechnician) {
+      if (!formData.password) {
+        setError('Password is required');
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
+      if (formData.password.length < 6) {
+        setError('Password must be at least 6 characters');
+        return;
+      }
+    }
 
     try {
       if (editingTechnician) {
@@ -113,6 +145,7 @@ function TechniciansPage() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    setError('');
   };
 
   return (
@@ -196,90 +229,122 @@ function TechniciansPage() {
       </section>
 
       {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>{editingTechnician ? 'Edit Technician' : 'Add Technician'}</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label htmlFor="name">Name *</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                />
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingTechnician ? 'Edit Technician' : 'Add Technician'}</h2>
+              <p className="modal-description">
+                {editingTechnician
+                  ? 'Update technician information and specialization'
+                  : 'Add a new technician to manage tickets and maintenance tasks'}
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="technician-form">
+              {error && <div className="form-error-banner">{error}</div>}
+
+              <div className="form-section">
+                <h3 className="form-section-title">Basic Information</h3>
+                <div className="form-grid-2">
+                  <div className="form-field">
+                    <label htmlFor="name">Name *</label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="Enter full name"
+                      maxLength={100}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="email">Email *</label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="Enter email address"
+                      maxLength={255}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="phone">Phone *</label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      placeholder="Enter phone number"
+                      maxLength={20}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="specialization">Specialization *</label>
+                    <select
+                      id="specialization"
+                      name="specialization"
+                      value={formData.specialization}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">-- Select Specialization --</option>
+                      {SPECIALIZATION_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
-              <div className="form-group">
-                <label htmlFor="email">Email *</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="phone">Phone *</label>
-                <input
-                  type="text"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="specialization">Specialization *</label>
-                <select
-                  id="specialization"
-                  name="specialization"
-                  value={formData.specialization}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select Specialization</option>
-                  {SPECIALIZATION_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="password">Password *</label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required={!editingTechnician}
-                  placeholder={editingTechnician ? 'Leave blank to keep current password' : ''}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="confirmPassword">Confirm Password *</label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  required={!editingTechnician}
-                  placeholder={editingTechnician ? 'Leave blank to keep current password' : ''}
-                />
-              </div>
+
+              {!editingTechnician && (
+                <div className="form-section">
+                  <h3 className="form-section-title">Security</h3>
+                  <div className="form-grid-2">
+                    <div className="form-field">
+                      <label htmlFor="password">Password *</label>
+                      <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        placeholder="At least 6 characters"
+                        maxLength={255}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label htmlFor="confirmPassword">Confirm Password *</label>
+                      <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        placeholder="Re-enter password"
+                        maxLength={255}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {editingTechnician && (
+                <div className="form-section form-section-info">
+                  <p className="field-help">Leave password fields blank to keep the current password</p>
+                </div>
+              )}
+
               <div className="modal-actions">
                 <button type="button" className="ghost-btn" onClick={() => setShowModal(false)}>
                   Cancel
                 </button>
                 <button type="submit" className="primary-btn">
-                  {editingTechnician ? 'Update' : 'Create'}
+                  {editingTechnician ? 'Update Technician' : 'Create Technician'}
                 </button>
               </div>
             </form>

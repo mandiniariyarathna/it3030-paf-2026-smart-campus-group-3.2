@@ -3,6 +3,7 @@ package com.smartcampus.ticket.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,12 +25,16 @@ import com.smartcampus.ticket.dto.TicketAssignmentRequest;
 import com.smartcampus.ticket.dto.TicketCommentUpdateRequest;
 import com.smartcampus.ticket.dto.TicketCreateRequest;
 import com.smartcampus.ticket.dto.TicketStatusUpdateRequest;
+import com.smartcampus.ticket.dto.TicketUpdateRequest;
 import com.smartcampus.ticket.model.Ticket;
 import com.smartcampus.ticket.model.TicketCategory;
 import com.smartcampus.ticket.model.TicketComment;
 import com.smartcampus.ticket.model.TicketPriority;
 import com.smartcampus.ticket.model.TicketStatus;
 import com.smartcampus.ticket.repository.TicketRepository;
+import com.smartcampus.technician.model.Technician;
+import com.smartcampus.technician.model.TechnicianStatus;
+import com.smartcampus.technician.repository.TechnicianRepository;
 
 @ExtendWith(MockitoExtension.class)
 class TicketServiceTest {
@@ -40,11 +45,14 @@ class TicketServiceTest {
     @Mock
     private MongoTemplate mongoTemplate;
 
+        @Mock
+        private TechnicianRepository technicianRepository;
+
     private TicketService ticketService;
 
     @BeforeEach
     void setUp() {
-        ticketService = new TicketService(ticketRepository, mongoTemplate);
+        ticketService = new TicketService(ticketRepository, mongoTemplate, technicianRepository);
     }
 
     @Test
@@ -121,12 +129,24 @@ class TicketServiceTest {
         Ticket ticket = Ticket.builder()
                 .id("ticket-4")
                 .reporterId("user-4")
+                .category(TicketCategory.ELECTRICAL)
                 .status(TicketStatus.OPEN)
                 .attachments(new ArrayList<>())
                 .comments(new ArrayList<>())
                 .build();
 
+        Technician technician = Technician.builder()
+                .id("tech-1")
+                .name("Tech One")
+                .email("tech1@smartcampus.com")
+                .phone("0770000000")
+                .specialization("electrical")
+                .password("password123")
+                .status(TechnicianStatus.ACTIVE)
+                .build();
+
         when(ticketRepository.findById("ticket-4")).thenReturn(Optional.of(ticket));
+        when(technicianRepository.findById("tech-1")).thenReturn(Optional.of(technician));
         when(ticketRepository.save(any(Ticket.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = ticketService.assignTechnician("ticket-4", "ADMIN",
@@ -171,10 +191,76 @@ class TicketServiceTest {
                 .build();
 
         when(ticketRepository.findById("ticket-6")).thenReturn(Optional.of(ticket));
+        doNothing().when(ticketRepository).deleteById("ticket-6");
+
+        ticketService.deleteTicket("ticket-6", "user-6", "ADMIN");
+
+        verify(ticketRepository).deleteById("ticket-6");
+    }
+
+    @Test
+    void shouldAllowOwnerToEditOpenTicket() {
+        Ticket ticket = Ticket.builder()
+                .id("ticket-7")
+                .reporterId("user-7")
+                .status(TicketStatus.OPEN)
+                .location("Old Block")
+                .category(TicketCategory.OTHER)
+                .description("Old description")
+                .priority(TicketPriority.LOW)
+                .contactDetails("0700000000")
+                .attachments(new ArrayList<>())
+                .comments(new ArrayList<>())
+                .build();
+
+        TicketUpdateRequest request = TicketUpdateRequest.builder()
+                .location("Engineering Building")
+                .category(TicketCategory.ELECTRICAL)
+                .description("Power outlet failure")
+                .priority(TicketPriority.HIGH)
+                .contactDetails("0771234567")
+                .build();
+
+        when(ticketRepository.findById("ticket-7")).thenReturn(Optional.of(ticket));
         when(ticketRepository.save(any(Ticket.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = ticketService.softDeleteTicket("ticket-6", "ADMIN");
+        var response = ticketService.updateTicket("ticket-7", "user-7", "USER", request);
 
-        assertEquals(TicketStatus.CLOSED, response.getStatus());
+        assertEquals("Engineering Building", response.getLocation());
+        assertEquals(TicketCategory.ELECTRICAL, response.getCategory());
+        assertEquals("Power outlet failure", response.getDescription());
+        assertEquals(TicketPriority.HIGH, response.getPriority());
+        assertEquals("0771234567", response.getContactDetails());
+    }
+
+    @Test
+    void shouldRejectEditingNonOpenTicket() {
+        Ticket ticket = Ticket.builder()
+                .id("ticket-8")
+                .reporterId("user-8")
+                .status(TicketStatus.IN_PROGRESS)
+                .location("Lab")
+                .category(TicketCategory.IT_EQUIPMENT)
+                .description("Issue")
+                .priority(TicketPriority.MEDIUM)
+                .contactDetails("0779999999")
+                .attachments(new ArrayList<>())
+                .comments(new ArrayList<>())
+                .build();
+
+        TicketUpdateRequest request = TicketUpdateRequest.builder()
+                .location("Updated Lab")
+                .category(TicketCategory.IT_EQUIPMENT)
+                .description("Updated issue")
+                .priority(TicketPriority.HIGH)
+                .contactDetails("0779999999")
+                .build();
+
+        when(ticketRepository.findById("ticket-8")).thenReturn(Optional.of(ticket));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> ticketService.updateTicket("ticket-8", "user-8", "USER", request));
+
+        verify(ticketRepository, never()).save(any(Ticket.class));
     }
 }
