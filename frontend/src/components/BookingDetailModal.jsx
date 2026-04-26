@@ -50,7 +50,7 @@ function BookingDetailModal({ booking, isAdmin, onClose, onApprove, onReject, on
             </button>
           ) : null}
 
-          {onRepeat && booking.status !== 'PENDING' ? (
+          {onRepeat && booking.status === 'APPROVED' ? (
             <button type="button" className="booking-btn booking-btn-repeat" onClick={() => onRepeat(booking)}>
               Repeat Booking
             </button>

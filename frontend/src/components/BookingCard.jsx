@@ -38,7 +38,7 @@ function BookingCard({ booking, isAdmin, onView, onCancel, onApprove, onReject, 
           </button>
         ) : null}
 
-        {booking.status !== 'PENDING' && onRepeat ? (
+        {booking.status === 'APPROVED' && onRepeat ? (
           <button type="button" className="booking-btn booking-btn-repeat" onClick={() => onRepeat(booking)}>
             Repeat Booking
           </button>
