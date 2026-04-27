@@ -102,6 +102,22 @@ function ResourcesPage() {
     setEditingResource(null);
   };
 
+  useEffect(() => {
+    if (!formOpen) {
+      return undefined;
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        closeForm();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [formOpen]);
+
   const handleSubmitForm = async (payload) => {
     setIsSubmitting(true);
 
@@ -201,13 +217,26 @@ function ResourcesPage() {
       </section>
 
       {formOpen && isAdmin ? (
-        <ResourceForm
-          mode={editingResource ? 'edit' : 'create'}
-          initialData={editingResource}
-          onSubmit={handleSubmitForm}
-          onCancel={closeForm}
-          isSubmitting={isSubmitting}
-        />
+        <div className="resource-modal" role="presentation" onClick={closeForm}>
+          <div
+            className="resource-modal-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={editingResource ? 'Edit resource' : 'Create resource'}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button type="button" className="resource-modal-close" onClick={closeForm} aria-label="Close dialog">
+              ×
+            </button>
+            <ResourceForm
+              mode={editingResource ? 'edit' : 'create'}
+              initialData={editingResource}
+              onSubmit={handleSubmitForm}
+              onCancel={closeForm}
+              isSubmitting={isSubmitting}
+            />
+          </div>
+        </div>
       ) : null}
     </main>
   );

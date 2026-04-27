@@ -410,7 +410,7 @@
 - Developer 3 must implement ticket lifecycle, embedded comments/attachments operations, and role-based actions.
 
 ### Backend Tasks
-- [ ] **D3-B01** Create `Ticket` MongoDB document class:
+- [X] **D3-B01** Create `Ticket` MongoDB document class:
   ```java
   @Document(collection = "tickets")
   public class Ticket {
@@ -444,10 +444,10 @@
       private LocalDateTime updatedAt;
   }
   ```
-- [ ] **D3-B02** Create `TicketStatus` enum: `OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`, `REJECTED`
-- [ ] **D3-B03** Create `TicketPriority` enum: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`
-- [ ] **D3-B04** Create `TicketCategory` enum: `ELECTRICAL`, `PLUMBING`, `IT_EQUIPMENT`, `HVAC`, `STRUCTURAL`, `OTHER`
-- [ ] **D3-B05** Create `TicketAttachment` embedded POJO (no `@Document`):
+- [X] **D3-B02** Create `TicketStatus` enum: `OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`, `REJECTED`
+- [X] **D3-B03** Create `TicketPriority` enum: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`
+- [X] **D3-B04** Create `TicketCategory` enum: `ELECTRICAL`, `PLUMBING`, `IT_EQUIPMENT`, `HVAC`, `STRUCTURAL`, `OTHER`
+- [X] **D3-B05** Create `TicketAttachment` embedded POJO (no `@Document`):
   ```java
   public class TicketAttachment {
       private String attachmentId;      // new ObjectId().toHexString()
@@ -458,7 +458,7 @@
       private LocalDateTime uploadedAt;
   }
   ```
-- [ ] **D3-B06** Create `TicketComment` embedded POJO (no `@Document`):
+- [X] **D3-B06** Create `TicketComment` embedded POJO (no `@Document`):
   ```java
   public class TicketComment {
       private String commentId;     // new ObjectId().toHexString()
@@ -469,12 +469,12 @@
       private LocalDateTime updatedAt;
   }
   ```
-- [ ] **D3-B07** Create `TicketRepository extends MongoRepository<Ticket, String>`:
+- [X] **D3-B07** Create `TicketRepository extends MongoRepository<Ticket, String>`:
   - [ ] `List<Ticket> findByReporterId(String reporterId)`
   - [ ] `List<Ticket> findByAssignedTechnicianId(String technicianId)`
   - [ ] `List<Ticket> findByStatusAndPriority(TicketStatus status, TicketPriority priority)`
   - [ ] No separate comment/attachment repositories — use `MongoTemplate` for embedded ops
-- [ ] **D3-B08** Create `TicketService`:
+- [X] **D3-B08** Create `TicketService`:
   - [ ] Ticket status workflow enforcement
   - [ ] Attachment upload: check `ticket.getAttachments().size() < 3` before adding
   - [ ] Add comment: `mongoTemplate.updateFirst(query, new Update().push("comments", comment), Ticket.class)`
@@ -482,31 +482,31 @@
   - [ ] Delete comment: `mongoTemplate.updateFirst(query, new Update().pull("comments", query(where("commentId").is(commentId))), Ticket.class)`
   - [ ] Comment ownership rules (edit/delete own; Admin deletes any)
   - [ ] Technician assignment logic
-- [ ] **D3-B09** Create `TicketController`:
+- [X] **D3-B09** Create `TicketController`:
   - [ ] `POST /api/v1/tickets` – Create ticket with attachments (USER)
   - [ ] `GET /api/v1/tickets` – List tickets (User: own; Admin/Tech: all, with filters)
   - [ ] `GET /api/v1/tickets/{id}` – Get ticket detail
   - [ ] `PUT /api/v1/tickets/{id}/status` – Update status (ADMIN/TECHNICIAN)
   - [ ] `PUT /api/v1/tickets/{id}/assign` – Assign technician (ADMIN)
   - [ ] `DELETE /api/v1/tickets/{id}` – Admin soft-delete (set status CLOSED)
-- [ ] **D3-B10** Create `TicketCommentController`:
+- [X] **D3-B10** Create `TicketCommentController`:
   - [ ] `POST /api/v1/tickets/{id}/comments` – Add comment (push to embedded array)
   - [ ] `PUT /api/v1/tickets/{id}/comments/{commentId}` – Edit own comment
   - [ ] `DELETE /api/v1/tickets/{id}/comments/{commentId}` – Delete comment (owner/Admin)
-- [ ] **D3-B11** Implement file upload with `MultipartFile` + local storage (safe file handling)
-- [ ] **D3-B12** Write unit tests for `TicketService` (min 5 tests)
-- [ ] **D3-B13** Write integration tests for ticket workflow using `@DataMongoTest`
-- [ ] **D3-B14** Add Swagger/OpenAPI annotations
+- [X] **D3-B11** Implement file upload with `MultipartFile` + local storage (safe file handling)
+- [X] **D3-B12** Write unit tests for `TicketService` (min 5 tests)
+- [X] **D3-B13** Write integration tests for ticket workflow using `@DataMongoTest`
+- [X] **D3-B14** Add Swagger/OpenAPI annotations
 
 ### Frontend Tasks
-- [ ] **D3-F01** Create `CreateTicketPage` – form with category, priority, description, image upload (max 3)
-- [ ] **D3-F02** Create `MyTicketsPage` – user's tickets list
-- [ ] **D3-F03** Create `AdminTicketsPage` – all tickets with filters and assignment UI
-- [ ] **D3-F04** Create `TicketDetailPage` – full ticket view, status timeline, comments, attachments
-- [ ] **D3-F05** Create `CommentSection` component with edit/delete actions
-- [ ] **D3-F06** Create `ImageUploadPreview` component (drag-and-drop, max 3 images)
-- [ ] **D3-F07** Create `TicketStatusBadge` and `PriorityBadge` components
-- [ ] **D3-F08** Implement `ticketService.js` API calls
+- [X] **D3-F01** Create `CreateTicketPage` – form with category, priority, description, image upload (max 3)
+- [X] **D3-F02** Create `MyTicketsPage` – user's tickets list
+- [X] **D3-F03** Create `AdminTicketsPage` – all tickets with filters and assignment UI
+- [X] **D3-F04** Create `TicketDetailPage` – full ticket view, status timeline, comments, attachments
+- [X] **D3-F05** Create `CommentSection` component with edit/delete actions
+- [X] **D3-F06** Create `ImageUploadPreview` component (drag-and-drop, max 3 images)
+- [X] **D3-F07** Create `TicketStatusBadge` and `PriorityBadge` components
+- [X] **D3-F08** Implement `ticketService.js` API calls
 
 ---
 

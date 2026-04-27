@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "bookings")
-@CompoundIndex(def = "{'resourceId': 1, 'date': 1, 'status': 1}")
+@CompoundIndex(name = "idx_bookings_conflict_check", def = "{'resourceId': 1, 'date': 1, 'status': 1}")
 public class Booking {
 
     @Id
