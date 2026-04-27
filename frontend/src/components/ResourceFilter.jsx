@@ -1,8 +1,16 @@
-function ResourceFilter({ filters, onChange, onReset }) {
+function ResourceFilter({ filters, sortBy, onSortChange, onChange, onReset }) {
   return (
     <aside className="resource-filter">
       <h2>Filter Resources</h2>
       <p className="resource-filter-copy">Use one or more filters to quickly find the right space or equipment.</p>
+
+      <label htmlFor="sort-by">Sort By</label>
+      <select id="sort-by" value={sortBy} onChange={(event) => onSortChange(event.target.value)}>
+        <option value="recentlyAdded">Recently Added</option>
+        <option value="capacity">Capacity (Low → High)</option>
+        <option value="name">Name (A → Z)</option>
+        <option value="status">Status</option>
+      </select>
 
       <label htmlFor="filter-type">Type</label>
       <select id="filter-type" value={filters.type} onChange={(event) => onChange('type', event.target.value)}>

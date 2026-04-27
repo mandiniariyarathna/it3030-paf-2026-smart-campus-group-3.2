@@ -13,6 +13,14 @@ const defaultFilters = {
   capacity: '',
 };
 
+const defaultSort = 'recentlyAdded';
+
+const statusSortOrder = {
+  ACTIVE: 0,
+  UNDER_MAINTENANCE: 1,
+  OUT_OF_SERVICE: 2,
+};
+
 function getSessionRole() {
   try {
     const session = JSON.parse(window.localStorage.getItem('smart-campus-session') || 'null');
@@ -25,6 +33,7 @@ function getSessionRole() {
 function ResourcesPage() {
   const [resources, setResources] = useState([]);
   const [filters, setFilters] = useState(defaultFilters);
+  const [sortBy, setSortBy] = useState(defaultSort);
   const [formOpen, setFormOpen] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,6 +62,36 @@ function ResourcesPage() {
     ];
   }, [resources]);
 
+  const sortedResources = useMemo(() => {
+    const parseCreatedAt = (value) => {
+      const parsed = new Date(value || 0);
+      return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+    };
+
+    return [...resources].sort((left, right) => {
+      if (sortBy === 'capacity') {
+        return left.capacity - right.capacity;
+      }
+
+      if (sortBy === 'name') {
+        return left.name.localeCompare(right.name);
+      }
+
+      if (sortBy === 'status') {
+        const leftRank = statusSortOrder[left.status] ?? Number.MAX_SAFE_INTEGER;
+        const rightRank = statusSortOrder[right.status] ?? Number.MAX_SAFE_INTEGER;
+
+        if (leftRank !== rightRank) {
+          return leftRank - rightRank;
+        }
+
+        return left.name.localeCompare(right.name);
+      }
+
+      return parseCreatedAt(right.createdAt) - parseCreatedAt(left.createdAt);
+    });
+  }, [resources, sortBy]);
+
   useEffect(() => {
     const loadResources = async () => {
       setIsLoading(true);
@@ -80,6 +119,7 @@ function ResourcesPage() {
 
   const resetFilters = () => {
     setFilters(defaultFilters);
+    setSortBy(defaultSort);
   };
 
   const refreshResources = async () => {
@@ -195,8 +235,38 @@ function ResourcesPage() {
         ))}
       </section>
 
+      <section className="resource-status-legend" aria-label="resource status legend">
+        <span className="resource-status-legend-label">Status legend</span>
+        <div className="resource-status-legend-items">
+          <span className="resource-status-legend-item">
+            <span className="resource-status resource-status-dot status-active" aria-hidden="true">
+              🟢
+            </span>
+            <span>Active</span>
+          </span>
+          <span className="resource-status-legend-item">
+            <span className="resource-status resource-status-dot status-maintenance" aria-hidden="true">
+              🟡
+            </span>
+            <span>Under Maintenance</span>
+          </span>
+          <span className="resource-status-legend-item">
+            <span className="resource-status resource-status-dot status-out" aria-hidden="true">
+              🔴
+            </span>
+            <span>Out of Service</span>
+          </span>
+        </div>
+      </section>
+
       <section className="resource-layout">
-        <ResourceFilter filters={filters} onChange={handleFilterChange} onReset={resetFilters} />
+        <ResourceFilter
+          filters={filters}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          onChange={handleFilterChange}
+          onReset={resetFilters}
+        />
 
         <section className="resource-grid" aria-label="resources">
           {isLoading ? <p className="resource-feedback">Loading resources...</p> : null}
@@ -204,7 +274,7 @@ function ResourcesPage() {
           {!isLoading && !error && resources.length === 0 ? (
             <p className="resource-feedback">No resources match the current filters.</p>
           ) : null}
-          {resources.map((resource) => (
+          {sortedResources.map((resource) => (
             <ResourceCard
               key={resource.id}
               resource={resource}
