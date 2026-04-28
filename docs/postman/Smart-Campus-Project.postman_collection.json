@@ -1,0 +1,212 @@
+{
+  "info": {
+    "_postman_id": "7f1a3e3c-6f8e-4d1c-9a10-9d6a12c2f001",
+    "name": "Smart Campus Project",
+    "description": "Postman collection for the Smart Campus backend APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8085" },
+    { "key": "managementUrl", "value": "http://localhost:8080" },
+    { "key": "studentEmail", "value": "keyhasith800@gmail.com" },
+    { "key": "studentPassword", "value": "" },
+    { "key": "adminUsername", "value": "admin" },
+    { "key": "adminPassword", "value": "Admin@1234" },
+    { "key": "technicianEmail", "value": "hasith@gmail.com" },
+    { "key": "technicianPassword", "value": "12345678" },
+    { "key": "resourceId", "value": "" },
+    { "key": "bookingId", "value": "" },
+    { "key": "ticketId", "value": "" },
+    { "key": "commentId", "value": "" },
+    { "key": "technicianId", "value": "" },
+    { "key": "fileName", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Google Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"idToken\": \"YOUR_GOOGLE_ID_TOKEN\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/google", "host": ["{{baseUrl}}"], "path": ["api", "auth", "google"] },
+            "description": "Exchange a Google idToken for an authenticated session. Google login uses idToken, not email/password."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Resources",
+      "item": [
+        { "name": "List Resources", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/resources", "host": ["{{baseUrl}}"], "path": ["api", "v1", "resources"] }, "description": "List resources with optional filters." } },
+        { "name": "Get Resource By Id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/resources/{{resourceId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "resources", "{{resourceId}}"] }, "description": "Fetch a single resource by id." } },
+        { "name": "Create Resource", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-Role", "value": "ADMIN" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Lab A-204\",\n  \"type\": \"LAB\",\n  \"capacity\": 40,\n  \"location\": \"Engineering Block A, Floor 2\",\n  \"status\": \"ACTIVE\",\n  \"description\": \"Computer laboratory\",\n  \"availabilityWindows\": [\n    {\n      \"dayOfWeek\": \"MONDAY\",\n      \"startTime\": \"08:00\",\n      \"endTime\": \"16:00\"\n    }\n  ],\n  \"createdBy\": \"admin-user-id\"\n}" }, "url": { "raw": "{{baseUrl}}/api/v1/resources", "host": ["{{baseUrl}}"], "path": ["api", "v1", "resources"] }, "description": "Create a new resource." } },
+        { "name": "Update Resource", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-Role", "value": "ADMIN" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Lab A-204 Updated\",\n  \"type\": \"LAB\",\n  \"capacity\": 45,\n  \"location\": \"Engineering Block A, Floor 2\",\n  \"status\": \"UNDER_MAINTENANCE\",\n  \"description\": \"Updated resource details\",\n  \"availabilityWindows\": [\n    {\n      \"dayOfWeek\": \"WEDNESDAY\",\n      \"startTime\": \"09:00\",\n      \"endTime\": \"15:00\"\n    }\n  ],\n  \"createdBy\": \"admin-user-id\"\n}" }, "url": { "raw": "{{baseUrl}}/api/v1/resources/{{resourceId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "resources", "{{resourceId}}"] }, "description": "Update an existing resource." } },
+        { "name": "Delete Resource", "request": { "method": "DELETE", "header": [{ "key": "X-User-Role", "value": "ADMIN" }], "url": { "raw": "{{baseUrl}}/api/v1/resources/{{resourceId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "resources", "{{resourceId}}"] }, "description": "Delete a resource." } },
+        { "name": "Resource Availability", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/resources/{{resourceId}}/availability", "host": ["{{baseUrl}}"], "path": ["api", "v1", "resources", "{{resourceId}}", "availability"] }, "description": "Get availability windows for a resource." } }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        { "name": "Create Booking", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"resourceId\": \"{{resourceId}}\",\n  \"date\": \"2026-04-28\",\n  \"startTime\": \"09:00\",\n  \"endTime\": \"11:00\",\n  \"purpose\": \"Project meeting\"\n}" }, "url": { "raw": "{{baseUrl}}/api/v1/bookings", "host": ["{{baseUrl}}"], "path": ["api", "v1", "bookings"] } } },
+        { "name": "List Bookings", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/bookings", "host": ["{{baseUrl}}"], "path": ["api", "v1", "bookings"] } } },
+        { "name": "Get Booking By Id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/bookings/{{bookingId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "bookings", "{{bookingId}}"] } } },
+        { "name": "Approve Booking", "request": { "method": "PUT", "header": [{ "key": "X-User-Role", "value": "ADMIN" }], "url": { "raw": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "v1", "bookings", "{{bookingId}}", "approve"] } } },
+        { "name": "Reject Booking", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-Role", "value": "ADMIN" }], "body": { "mode": "raw", "raw": "{\n  \"rejectionReason\": \"Schedule conflict\"\n}" }, "url": { "raw": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/reject", "host": ["{{baseUrl}}"], "path": ["api", "v1", "bookings", "{{bookingId}}", "reject"] } } },
+        { "name": "Cancel Booking", "request": { "method": "PUT", "header": [{ "key": "X-User-Id", "value": "YOUR_USER_ID" }], "url": { "raw": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "v1", "bookings", "{{bookingId}}", "cancel"] } } },
+        { "name": "Update Booking", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-Id", "value": "YOUR_USER_ID" }], "body": { "mode": "raw", "raw": "{\n  \"resourceId\": \"{{resourceId}}\",\n  \"date\": \"2026-04-28\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"12:00\",\n  \"purpose\": \"Updated meeting\"\n}" }, "url": { "raw": "{{baseUrl}}/api/v1/bookings/{{bookingId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "bookings", "{{bookingId}}"] } } },
+        { "name": "Bookings For Resource", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/resources/{{resourceId}}/bookings", "host": ["{{baseUrl}}"], "path": ["api", "v1", "resources", "{{resourceId}}", "bookings"] } } }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "item": [
+        { "name": "Create Ticket", "request": { "method": "POST", "header": [{ "key": "X-User-Id", "value": "YOUR_USER_ID" }], "body": { "mode": "formdata", "formdata": [{ "key": "ticket", "type": "text", "value": "{\n  \"title\": \"Projector not working\",\n  \"description\": \"The projector in room 204 does not power on.\",\n  \"category\": \"EQUIPMENT\",\n  \"priority\": \"HIGH\"\n}" }, { "key": "attachments", "type": "file", "src": [] }] }, "url": { "raw": "{{baseUrl}}/api/v1/tickets", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets"] } } },
+        { "name": "List Tickets", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/tickets", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets"] } } },
+        { "name": "Get Ticket By Id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}"] } } },
+        { "name": "Update Ticket", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated title\",\n  \"description\": \"Updated description\",\n  \"category\": \"EQUIPMENT\",\n  \"priority\": \"MEDIUM\"\n}" }, "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}"] } } },
+        { "name": "Update Ticket Status", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-Role", "value": "ADMIN" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}" }, "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}", "status"] } } },
+        { "name": "Assign Technician", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-Role", "value": "ADMIN" }], "body": { "mode": "raw", "raw": "{\n  \"technicianId\": \"{{technicianId}}\"\n}" }, "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/assign", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}", "assign"] } } },
+        { "name": "Delete Ticket", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}"] } } },
+        { "name": "Add Comment", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-Id", "value": "YOUR_USER_ID" }], "body": { "mode": "raw", "raw": "{\n  \"message\": \"Please check the power cable.\"\n}" }, "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}", "comments"] } } },
+        { "name": "Edit Comment", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-Id", "value": "YOUR_USER_ID" }], "body": { "mode": "raw", "raw": "{\n  \"message\": \"Updated comment text\"\n}" }, "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/comments/{{commentId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}", "comments", "{{commentId}}"] } } },
+        { "name": "Delete Comment", "request": { "method": "DELETE", "header": [{ "key": "X-User-Id", "value": "YOUR_USER_ID" }], "url": { "raw": "{{baseUrl}}/api/v1/tickets/{{ticketId}}/comments/{{commentId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "tickets", "{{ticketId}}", "comments", "{{commentId}}"] } } },
+        { "name": "Get Ticket Attachment", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/uploads/tickets/{{fileName}}", "host": ["{{baseUrl}}"], "path": ["uploads", "tickets", "{{fileName}}"] } } }
+      ]
+    },
+    {
+      "name": "Technicians",
+      "item": [
+        {
+          "name": "Technician Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{technicianEmail}}\",\n  \"password\": \"{{technicianPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "technicians", "login"]
+            }
+          }
+        },
+        {
+          "name": "List Technicians",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians?activeOnly=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "technicians"],
+              "query": [
+                {
+                  "key": "activeOnly",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Technician By Id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/{{technicianId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "technicians", "{{technicianId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Technician",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Tech\",\n  \"email\": \"{{technicianEmail}}\",\n  \"password\": \"{{technicianPassword}}\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "technicians"]
+            }
+          }
+        },
+        {
+          "name": "Update Technician",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Updated\",\n  \"email\": \"{{technicianEmail}}\",\n  \"password\": \"{{technicianPassword}}\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/{{technicianId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "technicians", "{{technicianId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Technician Status",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/{{technicianId}}/status?status=ACTIVE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "technicians", "{{technicianId}}", "status"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ACTIVE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Technician",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/{{technicianId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "technicians", "{{technicianId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        { "name": "Actuator Health", "request": { "method": "GET", "url": { "raw": "{{managementUrl}}/actuator/health", "host": ["{{managementUrl}}"], "path": ["actuator", "health"] } } },
+        { "name": "Actuator Info", "request": { "method": "GET", "url": { "raw": "{{managementUrl}}/actuator/info", "host": ["{{managementUrl}}"], "path": ["actuator", "info"] } } }
+      ]
+    }
+  ]
+}
