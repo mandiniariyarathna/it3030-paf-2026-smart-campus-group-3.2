@@ -1,6 +1,8 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '');
 
 const SIGNUP_ENDPOINT = '/api/auth/signup';
+const LOGIN_ENDPOINT = '/api/auth/login';
+const USERS_ENDPOINT = '/api/auth/users';
 const GOOGLE_AUTH_ENDPOINT = '/api/auth/google';
 
 export async function signupUser(signupPayload) {
@@ -66,4 +68,65 @@ export async function authenticateWithGoogle(idToken) {
   }
 
   return responseData;
+}
+
+export async function loginUser(loginPayload) {
+  let response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${LOGIN_ENDPOINT}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(loginPayload),
+    });
+  } catch {
+    throw new Error('Cannot reach the server. Make sure backend is running and try again.');
+  }
+
+  let responseData = null;
+
+  try {
+    responseData = await response.json();
+  } catch {
+    responseData = null;
+  }
+
+  if (!response.ok) {
+    const message = responseData?.message || 'Login failed. Please try again.';
+    throw new Error(message);
+  }
+
+  return responseData;
+}
+
+export async function getUsers() {
+  let response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${USERS_ENDPOINT}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  } catch {
+    throw new Error('Cannot reach the server. Make sure backend is running and try again.');
+  }
+
+  let responseData = null;
+
+  try {
+    responseData = await response.json();
+  } catch {
+    responseData = null;
+  }
+
+  if (!response.ok) {
+    const message = responseData?.message || 'Unable to load users.';
+    throw new Error(message);
+  }
+
+  return Array.isArray(responseData) ? responseData : [];
 }

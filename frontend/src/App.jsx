@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { authenticateWithGoogle } from './services/authService';
+import { authenticateWithGoogle, getUsers, loginUser, signupUser } from './services/authService';
 import { loginTechnician } from './services/technicianService';
 import ResourcesPage from './pages/ResourcesPage';
 import ResourceDetailPage from './pages/ResourceDetailPage';
@@ -93,6 +93,46 @@ function clearSession() {
 function createDisplayName(account) {
   const combinedName = [account.fullName, account.lastName].filter(Boolean).join(' ').trim();
   return combinedName || account.username || 'Student';
+}
+
+function normalizeAdminAccount(account) {
+  const role = (account.role || ROLE_USER).toLowerCase();
+  const displayName = account.displayName || createDisplayName(account);
+
+  return {
+    ...account,
+    accountId: account.accountId || account.id || `acc-${Date.now()}-${Math.random().toString(16).slice(2, 9)}`,
+    fullName: account.fullName || '',
+    lastName: account.lastName || '',
+    username: account.username || '',
+    mobileNumber: account.mobileNumber || '',
+    email: account.email || '',
+    role,
+    displayName,
+  };
+}
+
+function mergeAdminAccounts(primaryAccounts, secondaryAccounts) {
+  const mergedAccounts = [];
+  const seenKeys = new Set();
+
+  [...primaryAccounts, ...secondaryAccounts].forEach((account) => {
+    if (!account) {
+      return;
+    }
+
+    const normalizedAccount = normalizeAdminAccount(account);
+    const dedupeKey = `${normalizedAccount.email.toLowerCase()}|${normalizedAccount.username.toLowerCase()}`;
+
+    if (seenKeys.has(dedupeKey)) {
+      return;
+    }
+
+    seenKeys.add(dedupeKey);
+    mergedAccounts.push(normalizedAccount);
+  });
+
+  return mergedAccounts;
 }
 
 function createSessionFromAccount(account) {
@@ -374,45 +414,54 @@ function LoginPage() {
       return;
     }
 
-    const account = findAccountByCredentials(loginData.email, loginData.password);
+    // Try user login with backend
+    try {
+      const response = await loginUser({
+        identifier: loginData.email.trim(),
+        password: loginData.password,
+      });
 
-    if (account) {
-      if (account.role === ROLE_ADMIN) {
-        setSubmitError('Admin accounts must sign in from the admin access page.');
-        return;
-      }
+      const userSession = {
+        role: response.role,
+        displayName: response.displayName,
+        email: response.email,
+        username: response.username,
+        userId: response.id,
+        actorId: response.id || response.email,
+      };
 
-      const session = createSessionFromAccount(account);
-      saveSession(session);
+      saveSession(userSession);
       navigate('/home', {
         state: {
-          displayName: account.displayName,
-          role: account.role,
+          displayName: response.displayName,
+          role: response.role,
         },
       });
       return;
-    }
-
-    try {
-      const technician = await loginTechnician(loginData.email.trim(), loginData.password);
-      const technicianSession = {
-        role: ROLE_TECHNICIAN,
-        displayName: technician.name,
-        email: technician.email,
-        technicianId: technician.id,
-        actorId: technician.id,
-      };
-
-      saveSession(technicianSession);
-      navigate('/technician', {
-        state: {
-          displayName: technician.name,
+    } catch (userLoginError) {
+      // User login failed, try technician login
+      try {
+        const technician = await loginTechnician(loginData.email.trim(), loginData.password);
+        const technicianSession = {
           role: ROLE_TECHNICIAN,
+          displayName: technician.name,
+          email: technician.email,
           technicianId: technician.id,
-        },
-      });
-    } catch (technicianError) {
-      setSubmitError('No matching account was found.');
+          actorId: technician.id,
+        };
+
+        saveSession(technicianSession);
+        navigate('/technician', {
+          state: {
+            displayName: technician.name,
+            role: ROLE_TECHNICIAN,
+            technicianId: technician.id,
+          },
+        });
+        return;
+      } catch (technicianError) {
+        setSubmitError('No matching account was found. Please check your credentials.');
+      }
     }
   };
 
@@ -664,7 +713,7 @@ function SignupPage() {
     }));
   };
 
-  const handleSignupSubmit = (event) => {
+  const handleSignupSubmit = async (event) => {
     event.preventDefault();
 
     const nextErrors = validateForm(formData);
@@ -685,7 +734,7 @@ function SignupPage() {
     }
 
     try {
-      const account = {
+      const signupPayload = {
         fullName: formData.fullName.trim(),
         lastName: formData.lastName.trim(),
         username: formData.username.trim(),
@@ -693,16 +742,26 @@ function SignupPage() {
         email: formData.email.trim(),
         password: formData.password,
         role: formData.role,
-        displayName: createDisplayName(formData),
       };
 
-      saveAccount(account);
-      saveSession(createSessionFromAccount(account));
+      // Call backend API to create user
+      const response = await signupUser(signupPayload);
+
+      const userSession = {
+        role: response.role,
+        displayName: response.displayName,
+        email: response.email,
+        username: response.username,
+        userId: response.id,
+        actorId: response.id || response.email,
+      };
+
+      saveSession(userSession);
 
       navigate('/home', {
         state: {
-          displayName: account.displayName,
-          role: account.role,
+          displayName: response.displayName,
+          role: response.role,
         },
       });
     } catch (error) {
@@ -1153,19 +1212,27 @@ function AdminDashboardPage() {
     role: ROLE_USER,
   });
 
-  const syncAccountsFromStorage = () => {
-    const normalizedAccounts = getStoredAccounts().map((account) => ({
-      ...account,
-      accountId: account.accountId || `acc-${Date.now()}-${Math.random().toString(16).slice(2, 9)}`,
-      displayName: account.displayName || createDisplayName(account),
-    }));
+  const syncAccountsFromBackend = async () => {
+    const storedAccounts = getStoredAccounts();
 
-    setAccounts(normalizedAccounts);
-    saveAccounts(normalizedAccounts);
+    try {
+      const backendAccounts = await getUsers();
+      const normalizedBackendAccounts = backendAccounts.map(normalizeAdminAccount);
+      const normalizedStoredAccounts = storedAccounts.map(normalizeAdminAccount);
+      const mergedAccounts = mergeAdminAccounts(normalizedBackendAccounts, normalizedStoredAccounts);
+
+      setAccounts(mergedAccounts);
+      saveAccounts(mergedAccounts);
+      return;
+    } catch {
+      const normalizedStoredAccounts = storedAccounts.map(normalizeAdminAccount);
+      setAccounts(normalizedStoredAccounts);
+      saveAccounts(normalizedStoredAccounts);
+    }
   };
 
   useEffect(() => {
-    syncAccountsFromStorage();
+    syncAccountsFromBackend();
   }, []);
 
   const filteredAccounts = useMemo(() => {
